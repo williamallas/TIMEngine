@@ -67,16 +67,16 @@ public:
     Matrix& operator*=(const Matrix& m) { *this = *this*m; return *this; }
 
     const Vector<T,N>& operator[](size_t i) const { return _mat[i]; }
-    Vector<T,N>& operator[](int i) { return _mat[i]; }
+    Vector<T,N>& operator[](size_t i) { return _mat[i]; }
 
-    const T& get(int i) const { return _val[i]; }
-    T& get(int i) { return _val[i]; }
+    const T& get(size_t i) const { return _val[i]; }
+    T& get(size_t i) { return _val[i]; }
 
     Matrix& transpose() { for(size_t i=0;i<N;i++)for(size_t j=0;j<N;j++)std::swap(_val[i*N+j], _val[j*N+i]); return *this; }
     Matrix transposed() const { Matrix m; for(size_t i=0;i<N;i++)for(size_t j=0;j<N;j++)m.get(i*N+j)=_val[j*N+i]; return m; }
 
-    Matrix& scale(const Vector<T,N>& v) { for(size_t i=0;i<N;i++)_val[i*N+i]*=v[i]; return *this; }
-    Matrix scaled(const Vector<T,N>& v) const { Matrix m(*this); for(size_t i=0;i<N;i++)m.get(i*N+i)=_val[i*N+i]*v[i]; return m; }
+    Matrix& scale(const Vector<T,N-1>& v) { for(size_t i=0;i<N-1;i++)_val[i*N+i]*=v[i]; return *this; }
+    Matrix scaled(const Vector<T,N-1>& v) const { Matrix m(*this); for(size_t i=0;i<N-1;i++)m.get(i*N+i)=_val[i*N+i]*v[i]; return m; }
 
     Matrix& translate(const Vector<T,N-1>& v) { for(size_t i=0;i<N-1;i++)_val[i*N+N-1]+=v[i]; return *this; }
     Matrix translated(const Vector<T,N-1>& v) const { Matrix m(*this); for(size_t i=0;i<N-1;i++)m.get(i*N+N-1)+=v[i]; return m; }
@@ -116,7 +116,7 @@ public:
         return det;
     }
 
-    Matrix inversed()
+    Matrix inversed() const
     {
         Matrix inv;
         T invDet = 1.0/determinant();
@@ -199,15 +199,15 @@ public:
         return identity;
     }
 
-    static Matrix genScale(const Vector<T,N>& v)
+    static Matrix Scale(const Vector<T,N-1>& v)
     {
-        Matrix m(Matrix::ZERO());
-        for(size_t i=0 ; i<N ; i++)
+        Matrix m(Matrix::IDENTITY());
+        for(size_t i=0 ; i<N-1 ; i++)
             m.get(i*N+i)=v[i];
         return m;
     }
 
-    static Matrix translation(const Vector<T,N-1>& v)
+    static Matrix Translation(const Vector<T,N-1>& v)
     {
         Matrix m(Matrix::IDENTITY());
         for(size_t i=0 ; i<N-1 ; i++)
@@ -233,7 +233,7 @@ public:
     Matrix2(const T data[4]) : Matrix<T,2>(data) {}
     Matrix2(std::initializer_list<T> l) : Matrix<T,2>(l) {}
 
-    static Matrix2 rotation(const T& angle)
+    static Matrix2 Rotation(const T& angle)
     {
         T cosA = cos(angle);
         T sinA = sin(angle);
@@ -251,7 +251,7 @@ public:
     Matrix3(const T data[9]) : Matrix<T,3>(data) {}
     Matrix3(std::initializer_list<T> l) : Matrix<T,3>(l) {}
 
-    static Matrix3 rotationZ(T angle)
+    static Matrix3 RotationZ(T angle)
     {
         T cosA=cos(angle);
         T sinA=sin(angle);
@@ -262,7 +262,7 @@ public:
         return m;
     }
 
-    static Matrix3 rotationY(T angle)
+    static Matrix3 RotationY(T angle)
     {
         T cosA=cos(angle);
         T sinA=sin(angle);
@@ -273,7 +273,7 @@ public:
         return m;
     }
 
-    static Matrix3 rotationX(T angle)
+    static Matrix3 RotationX(T angle)
     {
         T cosA=cos(angle);
         T sinA=sin(angle);
@@ -295,7 +295,7 @@ public:
     Matrix4(const T data[16]) : Matrix<T,4>(data) {}
     Matrix4(std::initializer_list<T> l) : Matrix<T,4>(l) {}
 
-    static Matrix4 rotationZ(T angle)
+    static Matrix4 RotationZ(T angle)
     {
         T cosA=cos(angle);
         T sinA=sin(angle);
@@ -306,7 +306,7 @@ public:
         return m;
     }
 
-    static Matrix4 rotationY(T angle)
+    static Matrix4 RotationY(T angle)
     {
         T cosA=cos(angle);
         T sinA=sin(angle);
@@ -317,7 +317,7 @@ public:
         return m;
     }
 
-    static Matrix4 rotationX(T angle)
+    static Matrix4 RotationX(T angle)
     {
         T cosA=cos(angle);
         T sinA=sin(angle);
@@ -326,6 +326,49 @@ public:
         m.get(5)=cosA; m.get(9)=sinA;
         m.get(6)=-sinA; m.get(10)=cosA;
         return m;
+    }
+
+    static const Matrix4 & BIAS()
+    {
+        static const Matrix4 m = { 0.5,0,0,0.5,
+                                   0,0.5,0,0.5,
+                                   0,0,0.5,0.5,
+                                   0,0,0,1 };
+        return m;
+    }
+
+    static const Matrix4 & InvBIAS()
+    {
+        static const Matrix4 m = BIAS().inversed();
+        return m;
+    }
+
+    static Matrix4 Projection(T fov, T ratio, T znear, T zfar)
+    {
+        T xymax = znear * tanf(toRad(fov)*0.5);
+        T depth = zfar - znear;
+        T d=znear / xymax;
+
+        Matrix4 m;
+        m.get(0)=d / ratio;
+        m.get(5)=d;
+        m.get(10)=-(zfar + znear) / depth;
+        m.get(14)=-1;
+        m.get(11)=-2 * (zfar * znear) / depth;
+
+        return m;
+    }
+
+    static Matrix4 View(const vec3& pos, const vec3& posView, const vec3& up)
+    {
+        Matrix4 m;
+        Vector3<T> forward = (posView-pos).normalized();
+        m[0] = forward.cross(up).normalized();
+        m[1] = Vector3<T>(m[0]).cross(forward);
+        m[2] = -forward;
+        m[3] = {0,0,0,1};
+
+        return m * Matrix4::Translation(-pos);
     }
 };
 

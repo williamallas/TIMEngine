@@ -57,7 +57,6 @@ public:
     Vector& operator*=(const Vector& v)  { for(size_t i=0;i<N;i++)_val[i]*=v[i]; return *this; }
     Vector& operator/=(const Vector& v)  { for(size_t i=0;i<N;i++)_val[i]/=v[i]; return *this; }
 
-
     Vector operator+(const T& v) const { Vector vec; for(size_t i=0;i<N;i++)vec.set(_val[i]+v, i); return vec; }
     Vector operator-(const T& v) const { Vector vec; for(size_t i=0;i<N;i++)vec.set(_val[i]-v, i); return vec; }
     Vector operator*(const T& v) const { Vector vec; for(size_t i=0;i<N;i++)vec.set(_val[i]*v, i); return vec; }
@@ -68,8 +67,10 @@ public:
     Vector& operator*=(const T& v) { for(size_t i=0;i<N;i++)_val[i]*=v; return *this; }
     Vector& operator/=(const T& v) { for(size_t i=0;i<N;i++)_val[i]/=v; return *this; }
 
-    T& operator[](int i) { return _val[i]; }
-    const T& operator[](int i) const { return _val[i]; }
+    Vector operator-() const { return *this * -1; }
+
+    T& operator[](size_t i) { return _val[i]; }
+    const T& operator[](size_t i) const { return _val[i]; }
 
     template<size_t A>
     T dot(const Vector<T,A> & v) const
