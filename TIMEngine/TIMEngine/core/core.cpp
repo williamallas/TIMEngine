@@ -1,13 +1,20 @@
 #include "core.h"
 #include "MemoryLoggerOn.h"
 
-void tim::core::init()
+namespace tim
+{
+namespace core
+{
+
+void init()
 {
     std::freopen("err.txt", "w+", stderr);
 }
 
-void tim::core::quit()
+void quit()
 {
     MemoryLogger::freeInstance();
 }
 
+}
+}

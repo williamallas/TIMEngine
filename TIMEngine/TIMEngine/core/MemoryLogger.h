@@ -4,7 +4,6 @@
 #include <map>
 #include <cstdlib>
 
-#include "Type.h"
 #include "Exception.h"
 
 #include "MemoryLoggerOn.h"
@@ -18,7 +17,7 @@ namespace core
         struct MemoryAlloc
         {
             intptr_t ptr;
-            uint size, line;
+            size_t size, line;
             std::string file;
             bool isArray;
         };
@@ -27,9 +26,9 @@ namespace core
         static MemoryLogger & instance();
         static void freeInstance();
 
-        void* alloc(uint, uint, const std::string&, bool) throw(std::bad_alloc);
+        void* alloc(size_t, size_t, const std::string&, bool) throw(std::bad_alloc);
         void dealloc(void *, bool) throw(BadDealloc);
-        void nextDealloc(uint, const std::string&);
+        void nextDealloc(size_t, const std::string&);
 
         void printLeak() const;
 
@@ -39,7 +38,7 @@ namespace core
 
     private:
         std::map<intptr_t, MemoryAlloc> _allocatedMemorys;
-        uint _lastDeallocLine;
+        size_t _lastDeallocLine;
         std::string _lastDeallocFile;
 
         static MemoryLogger * _instance;
@@ -54,8 +53,8 @@ namespace core
 #include "MemoryLoggerOff.h"
 
 #ifdef TIM_DEBUG
-void* operator new(size_t size, uint line, const std::string& file);
-void* operator new[](size_t size, uint line, const std::string& file);
+void* operator new(size_t size, size_t line, const std::string& file);
+void* operator new[](size_t size, size_t line, const std::string& file);
 void operator delete(void * ptr) throw();
 void operator delete[](void * ptr) throw();
 #endif

@@ -36,14 +36,18 @@
 		</Compiler>
 		<Unit filename="TIMEngine/core/Exception.h" />
 		<Unit filename="TIMEngine/core/Logger.h" />
+		<Unit filename="TIMEngine/core/Math.cpp" />
+		<Unit filename="TIMEngine/core/Math.h" />
+		<Unit filename="TIMEngine/core/Matrix.h" />
 		<Unit filename="TIMEngine/core/MemoryLogger.cpp" />
 		<Unit filename="TIMEngine/core/MemoryLogger.h" />
 		<Unit filename="TIMEngine/core/MemoryLoggerOff.h" />
 		<Unit filename="TIMEngine/core/MemoryLoggerOn.h" />
+		<Unit filename="TIMEngine/core/Option.h" />
 		<Unit filename="TIMEngine/core/Singleton.h" />
 		<Unit filename="TIMEngine/core/StringUtils.cpp" />
 		<Unit filename="TIMEngine/core/StringUtils.h" />
-		<Unit filename="TIMEngine/core/Type.h" />
+		<Unit filename="TIMEngine/core/Vector.h" />
 		<Unit filename="TIMEngine/core/core.cpp" />
 		<Unit filename="TIMEngine/core/core.h" />
 		<Unit filename="main.cpp" />

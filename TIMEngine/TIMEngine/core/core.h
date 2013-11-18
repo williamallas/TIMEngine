@@ -2,11 +2,13 @@
 #define CORE_H_INCLUDED
 
 #include <cstdio>
-#include "Type.h"
 #include "Exception.h"
+#include "Option.h"
 #include "StringUtils.h"
 #include "Logger.h"
 #include "MemoryLogger.h"
+#include "Vector.h"
+#include "Matrix.h"
 
 #include "MemoryLoggerOn.h"
 namespace tim

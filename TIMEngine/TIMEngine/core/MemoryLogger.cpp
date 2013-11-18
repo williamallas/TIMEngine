@@ -32,7 +32,7 @@ MemoryLogger::~MemoryLogger()
     }
 }
 
-void* MemoryLogger::alloc(uint size, uint line, const std::string & file, bool isArray) throw(std::bad_alloc)
+void* MemoryLogger::alloc(size_t size, size_t line, const std::string & file, bool isArray) throw(std::bad_alloc)
 {
     intptr_t ptr = (intptr_t)malloc(size);
     if(ptr == 0)
@@ -77,7 +77,7 @@ void MemoryLogger::dealloc(void * ptr, bool isArray) throw(BadDealloc)
     }
 }
 
-void MemoryLogger::nextDealloc(uint line, const std::string& file)
+void MemoryLogger::nextDealloc(size_t line, const std::string& file)
 {
     _lastDeallocLine = line;
     _lastDeallocFile = file;
@@ -95,12 +95,12 @@ void MemoryLogger::printLeak() const
 }
 
 #ifdef TIM_DEBUG
-void* operator new(size_t size, uint line, const std::string& file)
+void* operator new(size_t size, size_t line, const std::string& file)
 {
     return MemoryLogger::instance().alloc(size, line, file, false);
 }
 
-void* operator new[](size_t size, uint line, const std::string& file)
+void* operator new[](size_t size, size_t line, const std::string& file)
 {
     return MemoryLogger::instance().alloc(size, line, file, true);
 }

@@ -29,6 +29,12 @@ namespace core
     public:
         BadDealloc(const std::string& s) : Exception(s){}
     };
+
+    class BadOptionAccess : public Exception
+    {
+    public:
+        BadOptionAccess() : Exception("Bad option access, option doesn't have a value."){}
+    };
 }
 }
 #include "MemoryLoggerOff.h"
