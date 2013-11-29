@@ -21,7 +21,7 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-O2" />
+					<Add option="-O3" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -30,26 +30,45 @@
 		</Build>
 		<Compiler>
 			<Add option="-std=c++11" />
-			<Add option="-Wall" />
 			<Add option="-DTIM_DEBUG" />
 			<Add directory="TIMEngine" />
+			<Add directory="TIMEngine/core" />
+			<Add directory="../Lib/" />
 		</Compiler>
 		<Unit filename="TIMEngine/core/Exception.h" />
 		<Unit filename="TIMEngine/core/Logger.h" />
-		<Unit filename="TIMEngine/core/Math.cpp" />
-		<Unit filename="TIMEngine/core/Math.h" />
 		<Unit filename="TIMEngine/core/Matrix.h" />
 		<Unit filename="TIMEngine/core/MemoryLogger.cpp" />
 		<Unit filename="TIMEngine/core/MemoryLogger.h" />
 		<Unit filename="TIMEngine/core/MemoryLoggerOff.h" />
 		<Unit filename="TIMEngine/core/MemoryLoggerOn.h" />
 		<Unit filename="TIMEngine/core/Option.h" />
+		<Unit filename="TIMEngine/core/Rand.cpp" />
+		<Unit filename="TIMEngine/core/Rand.h" />
 		<Unit filename="TIMEngine/core/Singleton.h" />
-		<Unit filename="TIMEngine/core/StringUtils.cpp" />
 		<Unit filename="TIMEngine/core/StringUtils.h" />
+		<Unit filename="TIMEngine/core/Timath.h" />
 		<Unit filename="TIMEngine/core/Vector.h" />
 		<Unit filename="TIMEngine/core/core.cpp" />
 		<Unit filename="TIMEngine/core/core.h" />
+		<Unit filename="TIMEngine/scene/ArraySceneContainer.h" />
+		<Unit filename="TIMEngine/scene/BoundingVolume.h" />
+		<Unit filename="TIMEngine/scene/Box.cpp" />
+		<Unit filename="TIMEngine/scene/Box.h" />
+		<Unit filename="TIMEngine/scene/Intersection.h" />
+		<Unit filename="TIMEngine/scene/OctreeNode.cpp" />
+		<Unit filename="TIMEngine/scene/OctreeNode.h" />
+		<Unit filename="TIMEngine/scene/OrientedBox.cpp" />
+		<Unit filename="TIMEngine/scene/OrientedBox.h" />
+		<Unit filename="TIMEngine/scene/SceneContainer.h" />
+		<Unit filename="TIMEngine/scene/SceneManager.cpp" />
+		<Unit filename="TIMEngine/scene/SceneManager.h" />
+		<Unit filename="TIMEngine/scene/Sphere.cpp" />
+		<Unit filename="TIMEngine/scene/Sphere.h" />
+		<Unit filename="TIMEngine/scene/Transformable.h" />
+		<Unit filename="TIMEngine/scene/scene.h" />
+		<Unit filename="Test.cpp" />
+		<Unit filename="Test.h" />
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<code_completion />

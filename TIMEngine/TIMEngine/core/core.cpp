@@ -1,6 +1,7 @@
 #include "core.h"
-#include "MemoryLoggerOn.h"
+#include "scene/scene.h"
 
+#include "MemoryLoggerOn.h"
 namespace tim
 {
 namespace core
@@ -9,11 +10,14 @@ namespace core
 void init()
 {
     std::freopen("err.txt", "w+", stderr);
+    Rand::seed(time(0));
 }
 
 void quit()
 {
-    MemoryLogger::freeInstance();
+    MemoryLogger::instance().printLeak();
+    free(&MemoryLogger::instance());
+    //MemoryLogger::freeInstance();
 }
 
 }

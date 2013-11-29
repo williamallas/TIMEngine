@@ -10,42 +10,42 @@ namespace tim
 namespace core
 {
 
-template <class T>
-class Option
-{
-public:
-
-    Option() { _hasValue=false; }
-    Option(const T& value) { _val=value; _hasValue = true; }
-    Option(const Option& option) { *this = option; }
-    virtual ~Option()
+    template <class T>
+    class Option
     {
-        if(_hasValue)
-            _val.~T();
-    }
+    public:
 
-    Option& operator=(const Option& option)
-    {
-        _hasValue = option.hasValue();
-        if(_hasValue)
-            _val = option.value();
-    }
+        Option() { _hasValue=false; }
+        Option(const T& value) { _val=value; _hasValue = true; }
+        Option(const Option& option) { *this = option; }
+        virtual ~Option()
+        {
+            if(_hasValue)
+                _val.~T();
+        }
 
-    bool hasValue() const { return _hasValue; }
+        Option& operator=(const Option& option)
+        {
+            _hasValue = option.hasValue();
+            if(_hasValue)
+                _val = option.value();
+        }
 
-    const T& value() const
-    {
-        if(!_hasValue)
-            throw BadOptionAccess();
+        bool hasValue() const { return _hasValue; }
 
-         return _val;
-    }
+        const T& value() const
+        {
+            if(!_hasValue)
+                throw BadOptionAccess();
 
-private:
-    union { T _val; };
-    bool _hasValue;
+             return _val;
+        }
 
-};
+    private:
+        union { T _val; };
+        bool _hasValue;
+
+    };
 
 }
 }

@@ -4,6 +4,7 @@
 #include <cstdio>
 #include "Exception.h"
 #include "Option.h"
+#include "Rand.h"
 #include "StringUtils.h"
 #include "Logger.h"
 #include "MemoryLogger.h"

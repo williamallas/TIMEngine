@@ -12,7 +12,7 @@ namespace core
     class Singleton
     {
     public:
-        static T & instance();
+        static T& instance();
 
         static void freeInstance()
         {
@@ -23,14 +23,14 @@ namespace core
         Singleton(){}
 
     private:
-        static T * _instance;
+        static T* _instance;
 
         Singleton(const Singleton &);
-        Singleton & operator=(const Singleton&);
+        Singleton& operator=(const Singleton&);
     };
 
     template<class T>
-    T & Singleton<T>::instance()
+    T& Singleton<T>::instance()
     {
         if(!_instance)
             _instance = new T;
@@ -38,7 +38,7 @@ namespace core
     }
 
     template<class T>
-    T * Singleton<T>::_instance = nullptr;
+    T* Singleton<T>::_instance = nullptr;
 }
 }
 #include "MemoryLoggerOff.h"

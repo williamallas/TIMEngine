@@ -6,9 +6,9 @@
 
 using namespace tim::core;
 
-MemoryLogger * MemoryLogger::_instance = nullptr;
+MemoryLogger* MemoryLogger::_instance = nullptr;
 
-MemoryLogger & MemoryLogger::instance()
+MemoryLogger& MemoryLogger::instance()
 {
     if(!_instance)
         _instance = new MemoryLogger;
@@ -17,7 +17,8 @@ MemoryLogger & MemoryLogger::instance()
 
 void MemoryLogger::freeInstance()
 {
-    delete _instance;
+    _instance->~MemoryLogger();
+    free(_instance);
     _instance=0;
 }
 
@@ -32,19 +33,19 @@ MemoryLogger::~MemoryLogger()
     }
 }
 
-void* MemoryLogger::alloc(size_t size, size_t line, const std::string & file, bool isArray) throw(std::bad_alloc)
+void* MemoryLogger::alloc(size_t size, size_t line, const std::string& file, bool isArray) throw(std::bad_alloc)
 {
-    intptr_t ptr = (intptr_t)malloc(size);
-    if(ptr == 0)
+    void* ptr = malloc(size);
+    if(ptr == nullptr)
         throw std::bad_alloc();
 
     _allocatedMemorys[ptr] = {ptr, size, line, file, isArray};
     return (void*)ptr;
 }
 
-void MemoryLogger::dealloc(void * ptr, bool isArray) throw(BadDealloc)
+void MemoryLogger::dealloc(void* ptr, bool isArray) throw(BadDealloc)
 {
-    auto it = _allocatedMemorys.find((intptr_t)ptr);
+    auto it = _allocatedMemorys.find(ptr);
     if(it != _allocatedMemorys.end())
     {
         if(it->second.isArray != isArray)
@@ -105,12 +106,12 @@ void* operator new[](size_t size, size_t line, const std::string& file)
     return MemoryLogger::instance().alloc(size, line, file, true);
 }
 
-void operator delete(void * ptr) throw()
+void operator delete(void* ptr) throw()
 {
     MemoryLogger::instance().dealloc(ptr, false);
 }
 
-void operator delete[](void * ptr) throw()
+void operator delete[](void* ptr) throw()
 {
     MemoryLogger::instance().dealloc(ptr, true);
 }
