@@ -23,6 +23,11 @@ std::string Box::str() const
     return str;
 }
 
+Sphere Box::toSphere() const
+{
+    return Sphere(center(), min().length());
+}
+
 /* sphere */
 bool Box::inside(const Sphere& s) const
 {

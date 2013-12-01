@@ -21,24 +21,32 @@ namespace scene
 
     class Transformable
     {
+        friend class SceneManager;
+
     public:
+        virtual ~Transformable();
+
         const BoundingVolume& volume() const;
+        const vec3& volumeCenter() const;
 
         /* Containers */
         Transformable& addContainer(TransformableContainer*);
         bool removeContainer(TransformableContainer*);
 
     private:
-        BoundingVolume _volume;
         boost::container::vector<TransformableContainer*> _parentsContainer;
         SceneManager* _sceneManager;
 
     protected:
+        BoundingVolume _volume;
+
         Transformable(SceneManager* scene) : _sceneManager(scene) {}
-        virtual ~Transformable() {}
     };
 
+
+    /** Inline implementation */
     inline const BoundingVolume& Transformable::volume() const { return _volume; }
+    inline const vec3& Transformable::volumeCenter() const { return _volume.sphere.center(); }
 
     inline Transformable& Transformable::addContainer(TransformableContainer* container)
     {

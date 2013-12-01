@@ -38,6 +38,8 @@ namespace scene
         void toLeaf();
     };
 
+
+    /** Inline implementation */
     inline bool OctreeNode::remove(Transformable* obj) { return removeFromRoot(obj); }
 
 }

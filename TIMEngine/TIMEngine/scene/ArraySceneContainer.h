@@ -20,6 +20,8 @@ namespace scene
         bool remove(Transformable*);
     };
 
+
+    /** Inline implementation */
     inline Intersection ArraySceneContainer::insert(Transformable* obj)
     {
         Intersection inter;

@@ -95,6 +95,14 @@ void MemoryLogger::printLeak() const
     }
 }
 
+bool MemoryLogger::exist(void* ptr) const
+{
+    if(_allocatedMemorys.find(ptr) != _allocatedMemorys.end())
+        return true;
+    else
+        return false;
+}
+
 #ifdef TIM_DEBUG
 void* operator new(size_t size, size_t line, const std::string& file)
 {

@@ -68,6 +68,18 @@ namespace core
 
         Vector operator-() const { return *this * -1; }
 
+        bool operator<(const Vector& v) const
+        {
+            for(size_t i=0;i<N;i++)
+            {
+                if(_val[i] < v._val[i])
+                    return true;
+                else if(_val[i] > v._val[i])
+                    return false;
+            }
+            return false;
+        }
+
         T& operator[](size_t i) { return _val[i]; }
         const T& operator[](size_t i) const { return _val[i]; }
 

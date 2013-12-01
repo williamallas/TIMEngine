@@ -26,8 +26,8 @@ OctreeNode::OctreeNode(const vec3& center) : TransformableContainer()
 
 OctreeNode::OctreeNode(const vec3& center, OctreeNode* parent, int depth) : TransformableContainer()
 {
-    _box.setMin(center - parent->box().halfSize()*0.5);
-    _box.setMax(center + parent->box().halfSize()*0.5);
+    _box.setMin(center - parent->box().halfSize()/2);
+    _box.setMax(center + parent->box().halfSize()/2);
 
     _parent = parent;
     _isLeaf = true;
@@ -64,19 +64,20 @@ Intersection OctreeNode::insert(Transformable* obj)
     if(inter==OUTSIDE)
         return OUTSIDE;
 
-    if(_container.size() >= MAX_ELEMENT && _depth < MAX_DEPTH && _isLeaf)
-        toNode();
-
     _container.push_back(obj);
 
-    if(!_isLeaf)
+    if(_container.size() >= MAX_ELEMENT && _depth < MAX_DEPTH && _isLeaf)
+        toNode();
+    else if(_isLeaf)
+        obj->addContainer(this);
+    else
     {
         for(size_t i=0 ; i<8 ; i++)
+        {
             if(_child[i]->insert(obj) == INSIDE)
                 break;
+        }
     }
-    else
-        obj->addContainer(this);
 
     return inter;
 }
@@ -150,22 +151,23 @@ void OctreeNode::toNode()
     for(size_t j=0 ; j<_container.size() ; j++)
         _container[j]->removeContainer(this);
 
-    for(size_t i=0 ; i<8 ; i++)
-        for(size_t j=0 ; j<_container.size() ; j++)
+    for(size_t j=0 ; j<_container.size() ; j++)
+        for(size_t i=0 ; i<8 ; i++)
         {
             if(_child[i]->insert(_container[j]) == INSIDE)
                 break;
         }
-
 }
 
 void OctreeNode::toLeaf()
 {
-    _isLeaf = true;
     for(size_t i=0 ; i<8 ; i++)
     {
         delete _child[i];
+        _child[i] = nullptr;
     }
+
+    _isLeaf = true;
 
     for(size_t j=0 ; j<_container.size() ; j++)
         _container[j]->addContainer(this);

@@ -6,13 +6,43 @@
 using namespace tim::scene;
 using namespace tim::core;
 
+class MyTransformable : public Transformable
+{
+public:
+    MyTransformable(SceneManager* sc) : Transformable(sc)
+    {
+        _volume.accurate=false;
+        _volume.sphere = Sphere({Rand::frand({-100000,100000}),Rand::frand({-100000,100000}),Rand::frand({-100000,100000})}, 1);
+        _volume.obb = OrientedBox(_volume.sphere.toBox(), mat4::IDENTITY());
+    }
+
+    virtual ~MyTransformable() {}
+};
+
+class TransformableFactory
+{
+public:
+    Transformable* operator()(SceneManager* scene)
+    {
+        return new MyTransformable(scene);
+    }
+};
 
 int main(int argc, char** argv)
 {
     tim::core::init();
     {
+        SceneManager scene;
+        TransformableFactory factory;
 
+        boost::container::vector<Transformable*> all;
+        for(int i=0 ; i<1000000 ; i++)
+            all.push_back(scene.addTransformable(factory));
 
+        for(int i=0 ; i<1000000 ; i++)
+        {
+            delete all[i];
+        }
     }
     tim::core::quit();
 

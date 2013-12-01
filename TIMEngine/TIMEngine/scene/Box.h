@@ -38,6 +38,7 @@ namespace scene
         vec3 size() const;
         vec3 halfSize() const;
         Box max(const Box&) const;
+        Sphere toSphere() const;
 
         /* Collision */
 
@@ -67,6 +68,7 @@ namespace scene
     };
 
 
+    /** Inline implementation */
     inline const Vector<vec2, 3>& Box::box() const { return _box; }
     inline Box& Box::setX(const vec2& v) { _box[0]=v; return *this; }
     inline Box& Box::setY(const vec2& v) { _box[1]=v; return *this; }

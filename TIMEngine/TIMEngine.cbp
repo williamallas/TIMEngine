@@ -13,6 +13,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
+					<Add option="-DTIM_DEBUG" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -30,7 +31,6 @@
 		</Build>
 		<Compiler>
 			<Add option="-std=c++11" />
-			<Add option="-DTIM_DEBUG" />
 			<Add directory="TIMEngine" />
 			<Add directory="TIMEngine/core" />
 			<Add directory="../Lib/" />
@@ -65,6 +65,7 @@
 		<Unit filename="TIMEngine/scene/SceneManager.h" />
 		<Unit filename="TIMEngine/scene/Sphere.cpp" />
 		<Unit filename="TIMEngine/scene/Sphere.h" />
+		<Unit filename="TIMEngine/scene/Transformable.cpp" />
 		<Unit filename="TIMEngine/scene/Transformable.h" />
 		<Unit filename="TIMEngine/scene/scene.h" />
 		<Unit filename="Test.cpp" />

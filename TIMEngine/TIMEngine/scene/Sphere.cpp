@@ -14,6 +14,13 @@ Sphere::Sphere(const Sphere& s) : _center(s._center), _radius(s._radius) { }
 
 Sphere::~Sphere() { }
 
+Box Sphere::toBox() const
+{
+    return Box({{_center.x()-_radius, _center.x()+_radius},
+                {_center.y()-_radius, _center.y()+_radius},
+                {_center.z()-_radius, _center.z()+_radius}});
+}
+
 /* AABB */
 bool Sphere::inside(const Box&  box) const
 {

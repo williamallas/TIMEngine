@@ -47,6 +47,8 @@ namespace core
 }
 }
 
+
+/** Inline implementation */
 #include <locale>
 
 using namespace tim::core;

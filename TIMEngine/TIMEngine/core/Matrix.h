@@ -95,6 +95,7 @@ namespace core
         Matrix& scale(const Vector<T,N-1>& v) { for(size_t i=0;i<N-1;i++)_val[i*N+i]*=v[i]; return *this; }
         Matrix scaled(const Vector<T,N-1>& v) const { Matrix m(*this); for(size_t i=0;i<N-1;i++)m.get(i*N+i)=_val[i*N+i]*v[i]; return m; }
 
+        Vector<T,N> translation() const { Vector<T,N> res; for(size_t i=0;i<N-1;i++)res[i]=_val[i*N+N-1]; return res; }
         Matrix& translate(const Vector<T,N-1>& v) { for(size_t i=0;i<N-1;i++)_val[i*N+N-1]+=v[i]; return *this; }
         Matrix translated(const Vector<T,N-1>& v) const { Matrix m(*this); for(size_t i=0;i<N-1;i++)m.get(i*N+N-1)+=v[i]; return m; }
         Matrix& setTranslation(const Vector<T,N-1>& v) { for(size_t i=0;i<N-1;i++)_val[i*N+N-1]=v[i]; return *this; }

@@ -28,6 +28,7 @@ namespace scene
         float radius() const;
         Sphere& setCenter(const vec3&);
         Sphere& setRadius(float);
+        Box toBox() const;
 
         /* Collision */
         bool inside(const Sphere&) const;
@@ -47,6 +48,8 @@ namespace scene
         float _radius = 0;
     };
 
+
+    /** Inline implementation */
     inline vec4 Sphere::sphere() const { return { _center.x(),_center.y(),_center.z(),_radius}; }
     inline const vec3& Sphere::center() const { return _center; }
     inline float Sphere::radius() const { return _radius; }

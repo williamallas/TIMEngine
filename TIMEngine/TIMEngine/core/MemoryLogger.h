@@ -30,6 +30,8 @@ namespace core
         void dealloc(void*, bool) throw(BadDealloc);
         void nextDealloc(size_t, const std::string&);
 
+        bool exist(void*) const;
+
         void printLeak() const;
 
     protected:
