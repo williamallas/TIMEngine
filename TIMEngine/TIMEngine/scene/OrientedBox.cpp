@@ -8,7 +8,7 @@ namespace scene
 {
 
 OrientedBox::OrientedBox() : _matrix(mat4::IDENTITY()), _invMatrix(mat4::IDENTITY()) { }
-OrientedBox::OrientedBox(const Box& box, const mat4& matrix) : _box(box), _matrix(matrix), _invMatrix(matrix.inversed()) { }
+OrientedBox::OrientedBox(const Box& box, const mat4& matrix) : _box(box), _matrix(matrix), _invMatrix(matrix.inverted()) { }
 
 OrientedBox::~OrientedBox() { }
 

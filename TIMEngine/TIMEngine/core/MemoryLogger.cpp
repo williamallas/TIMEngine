@@ -39,12 +39,15 @@ void* MemoryLogger::alloc(size_t size, size_t line, const std::string& file, boo
     if(ptr == nullptr)
         throw std::bad_alloc();
 
+    boost::lock_guard<boost::recursive_mutex> guard(_mutex);
     _allocatedMemorys[ptr] = {ptr, size, line, file, isArray};
+
     return (void*)ptr;
 }
 
 void MemoryLogger::dealloc(void* ptr, bool isArray) throw(BadDealloc)
 {
+    boost::lock_guard<boost::recursive_mutex> guard(_mutex);
     auto it = _allocatedMemorys.find(ptr);
     if(it != _allocatedMemorys.end())
     {
@@ -80,6 +83,7 @@ void MemoryLogger::dealloc(void* ptr, bool isArray) throw(BadDealloc)
 
 void MemoryLogger::nextDealloc(size_t line, const std::string& file)
 {
+    boost::lock_guard<boost::recursive_mutex> guard(_mutex);
     _lastDeallocLine = line;
     _lastDeallocFile = file;
 }
@@ -87,6 +91,8 @@ void MemoryLogger::nextDealloc(size_t line, const std::string& file)
 void MemoryLogger::printLeak() const
 {
     err("\nLeaks detected:\n");
+
+    boost::lock_guard<boost::recursive_mutex> guard(_mutex);
     for(auto it = _allocatedMemorys.begin() ; it != _allocatedMemorys.end() ; it++)
     {
         err("Leak of size " + StringUtils(it->second.size).str() + " in " +
@@ -97,6 +103,7 @@ void MemoryLogger::printLeak() const
 
 bool MemoryLogger::exist(void* ptr) const
 {
+    boost::lock_guard<boost::recursive_mutex> guard(_mutex);
     if(_allocatedMemorys.find(ptr) != _allocatedMemorys.end())
         return true;
     else

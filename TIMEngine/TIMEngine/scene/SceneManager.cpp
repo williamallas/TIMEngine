@@ -14,6 +14,8 @@ SceneManager::SceneManager()
 
 SceneManager::~SceneManager()
 {
+    boost::lock_guard<decltype(_mutexSubScene)> guard(_mutexSubScene);
+
     for(auto it : _subScene)
     {
         delete it.second;
@@ -38,9 +40,9 @@ bool SceneManager::removeTransformable(Transformable* obj)
 
         for(auto it : scene->neighbors)
         {
-            if(it->container.box().collide(obj->volume().sphere) != OUTSIDE)
+            if(it.second->container.box().collide(obj->volume().sphere) != OUTSIDE)
             {
-                it->container.remove(obj);
+                it.second->container.remove(obj);
             }
         }
     }
@@ -51,6 +53,8 @@ bool SceneManager::removeTransformable(Transformable* obj)
 
 SceneManager::SubScene* SceneManager::subScene(const ivec3& pos)
 {
+    boost::lock_guard<decltype(_mutexSubScene)> guard(_mutexSubScene);
+
     auto it = _subScene.find(pos);
     if(it != _subScene.end())
         return it->second;
@@ -69,21 +73,57 @@ SceneManager::SubScene* SceneManager::subScene(const ivec3& pos)
         auto opt = existSubScene(pos + ivec3(x,y,z));
         if(opt.hasValue())
         {
-            newSubScene->neighbors.insert(opt.value());
-            opt.value()->neighbors.insert(newSubScene);
+            newSubScene->neighbors[ivec3(x,y,z)] = opt.value();
+            opt.value()->neighbors[-ivec3(x,y,z)] = newSubScene;
         }
     }
 
     return newSubScene;
 }
 
-Option<SceneManager::SubScene*> SceneManager::existSubScene(const ivec3& pos)
+Option<SceneManager::SubScene*> SceneManager::existSubScene(const ivec3& pos) const
 {
+    boost::lock_guard<decltype(_mutexSubScene)> guard(_mutexSubScene);
+
     auto it = _subScene.find(pos);
     if(it != _subScene.end())
         return Option<SceneManager::SubScene*>(it->second);
     else
         return Option<SceneManager::SubScene*>();
+}
+
+void SceneManager::insertInNeighbors(SubScene* sub, const ivec3& index, Transformable* obj)
+{
+    boost::lock_guard<decltype(_mutexSubScene)> guard(_mutexSubScene);
+
+    for(int x=-1 ; x<=1 ; x+=1)
+        for(int y=-1 ; y<=1 ; y+=1)
+            for(int z=-1 ; z<=1 ; z+=1)
+    {
+        if(ivec3(x,y,z)==ivec3(0))
+            continue;
+
+        auto it = sub->neighbors.find(ivec3(x,y,z));
+        if(it != sub->neighbors.end())
+            it->second->tree.insert(obj);
+        else
+        {
+            vec3 center(index.x()+x, index.y()+y, index.z()+z);
+            center *= OctreeNode::SIZE_ROOT;
+            Box box(center-OctreeNode::SIZE_ROOT/2, center+OctreeNode::SIZE_ROOT/2);
+
+            if(obj->volume().accurate)
+            {
+                if(!box.outside(obj->volume().obb))
+                    subScene(ivec3(x,y,z)+index)->tree.insert(obj);
+            }
+            else
+            {
+                if(!box.outside(obj->volume().sphere))
+                    subScene(ivec3(x,y,z)+index)->tree.insert(obj);
+            }
+        }
+    }
 }
 
 }

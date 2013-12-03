@@ -24,23 +24,35 @@ namespace scene
         bool removeFromLeaf(Transformable*);
 
     private:
-        OctreeNode* _parent;
+        OctreeNode* _parent, *_root;
         OctreeNode* _child[8];
         bool _isLeaf;
         size_t _depth;
+        boost::mutex _mutex;
 
         static const size_t MAX_DEPTH;
         static const size_t MAX_ELEMENT;
 
-        OctreeNode(const vec3&, OctreeNode*, int);
+        OctreeNode(const vec3&, OctreeNode*, OctreeNode*, int);
 
         void toNode();
         void toLeaf();
+
+        Intersection internInsert(Transformable*);
+        bool internRemoveFromRoot(Transformable*);
+        bool internRemoveFromLeaf(Transformable*);
     };
 
 
     /** Inline implementation */
-    inline bool OctreeNode::remove(Transformable* obj) { return removeFromRoot(obj); }
+    inline bool OctreeNode::remove(Transformable* obj)
+    { /*boost::lock_guard<decltype(_mutex)> guard(_root->_mutex);*/return internRemoveFromRoot(obj); }
+    inline Intersection OctreeNode::insert(Transformable* obj)
+    { /*boost::lock_guard<decltype(_mutex)> guard(_root->_mutex);*/return internInsert(obj); }
+    inline bool OctreeNode::removeFromRoot(Transformable* obj)
+    { /*boost::lock_guard<decltype(_mutex)> guard(_root->_mutex);*/return internRemoveFromRoot(obj); }
+    inline bool OctreeNode::removeFromLeaf(Transformable* obj)
+    { /*boost::lock_guard<decltype(_mutex)> guard(_root->_mutex);*/return internRemoveFromLeaf(obj); }
 
 }
 }

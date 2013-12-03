@@ -1,8 +1,8 @@
 #ifndef MEMORYLOGGER_H_INCLUDED
 #define MEMORYLOGGER_H_INCLUDED
 
-#include <boost/container/map.hpp>
 #include <cstdlib>
+#include "type.h"
 
 #include "Exception.h"
 
@@ -39,9 +39,10 @@ namespace core
         virtual ~MemoryLogger();
 
     private:
-        boost::container::map<void*, MemoryAlloc> _allocatedMemorys;
+        std::map<void*, MemoryAlloc> _allocatedMemorys;
         size_t _lastDeallocLine;
         std::string _lastDeallocFile;
+        mutable boost::recursive_mutex _mutex;
 
         static MemoryLogger* _instance;
 

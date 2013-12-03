@@ -33,8 +33,13 @@
 			<Add option="-std=c++11" />
 			<Add directory="TIMEngine" />
 			<Add directory="TIMEngine/core" />
-			<Add directory="../Lib/" />
+			<Add directory="../Lib/boost" />
 		</Compiler>
+		<Linker>
+			<Add library="..\Lib\boost\boost-mingw\boost\bin.v2\libs\system\build\gcc-mingw-4.7.1\release\threading-multi\libboost_system-mgw47-mt-1_55.dll.a" />
+			<Add library="..\Lib\boost\boost-mingw\boost\bin.v2\libs\thread\build\gcc-mingw-4.7.1\release\threading-multi\libboost_thread-mgw47-mt-1_55.dll.a" />
+			<Add library="..\Lib\boost\boost-mingw\boost\bin.v2\libs\atomic\build\gcc-mingw-4.7.1\release\threading-multi\libboost_atomic-mgw47-mt-1_55.dll.a" />
+		</Linker>
 		<Unit filename="TIMEngine/core/Exception.h" />
 		<Unit filename="TIMEngine/core/Logger.h" />
 		<Unit filename="TIMEngine/core/Matrix.h" />
@@ -51,6 +56,7 @@
 		<Unit filename="TIMEngine/core/Vector.h" />
 		<Unit filename="TIMEngine/core/core.cpp" />
 		<Unit filename="TIMEngine/core/core.h" />
+		<Unit filename="TIMEngine/core/type.h" />
 		<Unit filename="TIMEngine/scene/ArraySceneContainer.h" />
 		<Unit filename="TIMEngine/scene/BoundingVolume.h" />
 		<Unit filename="TIMEngine/scene/Box.cpp" />

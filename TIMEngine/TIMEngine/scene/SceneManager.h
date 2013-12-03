@@ -1,8 +1,6 @@
 #ifndef SCENEMANAGER_H
 #define SCENEMANAGER_H
 
-#include "boost/container/set.hpp"
-#include "boost/container/map.hpp"
 #include "core.h"
 #include "ArraySceneContainer.h"
 #include "OctreeNode.h"
@@ -34,14 +32,16 @@ namespace scene
             OctreeNode tree;
             ArraySceneContainer container;
 
-            boost::container::set<SubScene*> neighbors;
+            boost::container::map<ivec3, SubScene*> neighbors;
         };
 
         boost::container::map<ivec3, SubScene*> _subScene;
+        mutable boost::recursive_mutex _mutexSubScene; // protect _subScene
 
         /* methods private */
         SubScene* subScene(const ivec3&);
-        Option<SubScene*> existSubScene(const ivec3&);
+        Option<SubScene*> existSubScene(const ivec3&) const;
+        void insertInNeighbors(SubScene*, const ivec3&, Transformable*);
 
     };
 
@@ -57,10 +57,15 @@ namespace scene
     Transformable* SceneManager::addTransformable(Factory& factory, bool inOctree)
     {
         Transformable* obj = factory(this);
-        SubScene * scene = subScene(subSceneIndex(obj->volumeCenter()));
+        ivec3 index = subSceneIndex(obj->volumeCenter());
+
+        SubScene * scene = subScene(index);
 
         if(inOctree)
-            scene->tree.insert(obj);
+        {
+            if(scene->tree.insert(obj) == INTERSECT)
+                insertInNeighbors(scene, index, obj);
+        }
         else
             scene->container.insert(obj);
 

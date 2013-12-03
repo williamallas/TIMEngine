@@ -7,7 +7,7 @@ namespace tim
 namespace scene
 {
 
-const vec3 OctreeNode::SIZE_ROOT = vec3(1024);
+const vec3 OctreeNode::SIZE_ROOT = vec3(4096);
 const size_t OctreeNode::MAX_DEPTH = 6;
 const size_t OctreeNode::MAX_ELEMENT = 32;
 
@@ -17,6 +17,7 @@ OctreeNode::OctreeNode(const vec3& center) : TransformableContainer()
     _box.setMax(center + vec3(SIZE_ROOT.x()/2));
 
     _parent = nullptr;
+    _root = this;
     _isLeaf = true;
     _depth = 0;
 
@@ -24,12 +25,13 @@ OctreeNode::OctreeNode(const vec3& center) : TransformableContainer()
         _child[i] = nullptr;
 }
 
-OctreeNode::OctreeNode(const vec3& center, OctreeNode* parent, int depth) : TransformableContainer()
+OctreeNode::OctreeNode(const vec3& center, OctreeNode* parent, OctreeNode* root, int depth) : TransformableContainer()
 {
     _box.setMin(center - parent->box().halfSize()/2);
     _box.setMax(center + parent->box().halfSize()/2);
 
     _parent = parent;
+    _root = root;
     _isLeaf = true;
     _depth = depth;
 
@@ -39,6 +41,8 @@ OctreeNode::OctreeNode(const vec3& center, OctreeNode* parent, int depth) : Tran
 
 OctreeNode::~OctreeNode()
 {
+    boost::lock_guard<decltype(_mutex)> guard(_mutex);
+
     if(_isLeaf)
     {
         for(size_t i=0 ; i<_container.size() ; i++)
@@ -53,7 +57,7 @@ OctreeNode::~OctreeNode()
     }
 }
 
-Intersection OctreeNode::insert(Transformable* obj)
+Intersection OctreeNode::internInsert(Transformable* obj)
 {
     Intersection inter;
     if(obj->volume().accurate)
@@ -64,25 +68,36 @@ Intersection OctreeNode::insert(Transformable* obj)
     if(inter==OUTSIDE)
         return OUTSIDE;
 
+    boost::lock_guard<decltype(_mutex)> guard(_mutex);
+
     _container.push_back(obj);
 
     if(_container.size() >= MAX_ELEMENT && _depth < MAX_DEPTH && _isLeaf)
+    {
+
+        _mutex.unlock();
         toNode();
+        _mutex.lock();
+    }
     else if(_isLeaf)
+    {
         obj->addContainer(this);
+    }
     else
     {
+        _mutex.unlock();
         for(size_t i=0 ; i<8 ; i++)
         {
-            if(_child[i]->insert(obj) == INSIDE)
+            if(_child[i]->internInsert(obj) == INSIDE)
                 break;
         }
+        _mutex.lock();
     }
 
     return inter;
 }
 
-bool OctreeNode::removeFromRoot(Transformable* obj)
+bool OctreeNode::internRemoveFromRoot(Transformable* obj)
 {
     auto it = std::find(_container.begin(), _container.end(), obj);
     if(it == _container.end())
@@ -100,14 +115,14 @@ bool OctreeNode::removeFromRoot(Transformable* obj)
         else
         {
             for(size_t i=0 ; i<8 ; i++)
-                _child[i]->removeFromRoot(obj);
+                _child[i]->internRemoveFromRoot(obj);
         }
     }
 
     return true;
 }
 
-bool OctreeNode::removeFromLeaf(Transformable* obj)
+bool OctreeNode::internRemoveFromLeaf(Transformable* obj)
 {
     auto it = std::find(_container.begin(), _container.end(), obj);
     if(it == _container.end())
@@ -125,14 +140,14 @@ bool OctreeNode::removeFromLeaf(Transformable* obj)
     }
 
     if(_parent)
-        _parent->removeFromLeaf(obj);
+        _parent->internRemoveFromLeaf(obj);
 
     return true;
 }
 
 void OctreeNode::toNode()
 {
-    _isLeaf = false;
+    _mutex.lock();
 
     vec3 center = _box.center();
     vec3 half = _box.halfSize()*0.5;
@@ -144,23 +159,32 @@ void OctreeNode::toNode()
     {
         _child[index] = new OctreeNode({half.x()*i+center.x(),
                                         half.y()*j+center.y(),
-                                        half.z()*k+center.z()}, this, _depth+1);
+                                        half.z()*k+center.z()}, this, _root, _depth+1);
         index++;
     }
+
+    _isLeaf = false;
 
     for(size_t j=0 ; j<_container.size() ; j++)
         _container[j]->removeContainer(this);
 
-    for(size_t j=0 ; j<_container.size() ; j++)
+    decltype(_container) copyVec = _container;
+    _mutex.unlock();
+
+    for(size_t j=0 ; j<copyVec.size() ; j++)
+    {
         for(size_t i=0 ; i<8 ; i++)
         {
-            if(_child[i]->insert(_container[j]) == INSIDE)
+            if(_child[i]->internInsert(copyVec[j]) == INSIDE)
                 break;
         }
+    }
 }
 
 void OctreeNode::toLeaf()
 {
+    boost::lock_guard<decltype(_mutex)> guard(_mutex);
+
     for(size_t i=0 ; i<8 ; i++)
     {
         delete _child[i];

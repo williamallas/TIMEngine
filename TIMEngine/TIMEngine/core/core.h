@@ -2,6 +2,7 @@
 #define CORE_H_INCLUDED
 
 #include <cstdio>
+#include <mutex>
 #include "Exception.h"
 #include "Option.h"
 #include "Rand.h"
@@ -10,6 +11,7 @@
 #include "MemoryLogger.h"
 #include "Vector.h"
 #include "Matrix.h"
+#include "type.h"
 
 #include "MemoryLoggerOn.h"
 namespace tim

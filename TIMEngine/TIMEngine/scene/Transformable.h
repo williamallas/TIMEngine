@@ -1,7 +1,6 @@
 #ifndef TRANSFORMABLE_H_INCLUDED
 #define TRANSFORMABLE_H_INCLUDED
 
-#include <boost/container/vector.hpp>
 #include <algorithm>
 
 #include "core.h"
@@ -35,6 +34,8 @@ namespace scene
 
     private:
         boost::container::vector<TransformableContainer*> _parentsContainer;
+        boost::recursive_mutex _mutexParentsContainer; // protect _parentsContainer
+
         SceneManager* _sceneManager;
 
     protected:
@@ -50,13 +51,17 @@ namespace scene
 
     inline Transformable& Transformable::addContainer(TransformableContainer* container)
     {
+        boost::lock_guard<decltype(_mutexParentsContainer)> guard(_mutexParentsContainer);
         if(container)
             _parentsContainer.push_back(container);
+
         return *this;
     }
 
     inline bool Transformable::removeContainer(TransformableContainer* container)
     {
+        boost::lock_guard<decltype(_mutexParentsContainer)> guard(_mutexParentsContainer);
+
         auto it = std::find(_parentsContainer.begin(), _parentsContainer.end(), container);
         if(it != _parentsContainer.end())
         {

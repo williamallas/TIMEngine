@@ -11,6 +11,7 @@ namespace scene
 Box::Box() { }
 Box::Box(const Vector<vec2, 3>& box) : _box(box) { }
 Box::Box(const Box& box) { _box=box._box; }
+Box::Box(const vec3& mini, const vec3& maxi) { setMin(mini); setMax(maxi); }
 
 Box::~Box() { }
 

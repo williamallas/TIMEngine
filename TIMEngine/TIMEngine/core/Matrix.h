@@ -134,7 +134,7 @@ namespace core
             return det;
         }
 
-        Matrix inversed() const
+        Matrix inverted() const
         {
             Matrix inv;
             T invDet = 1.0/determinant();

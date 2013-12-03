@@ -48,7 +48,7 @@ namespace scene
     inline const mat4& OrientedBox::matrix() const { return _matrix; }
     inline const mat4& OrientedBox::inverseMatrix() const { return _invMatrix; }
 
-    inline OrientedBox& OrientedBox::setMatrix(const mat4& mat) { _matrix=mat; _invMatrix=mat.inversed(); return *this; }
+    inline OrientedBox& OrientedBox::setMatrix(const mat4& mat) { _matrix=mat; _invMatrix=mat.inverted(); return *this; }
     inline OrientedBox& OrientedBox::setBox(const Box& box) { _box=box; return *this; }
 
 }
