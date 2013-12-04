@@ -45,14 +45,10 @@ namespace scene
 
 
     /** Inline implementation */
-    inline bool OctreeNode::remove(Transformable* obj)
-    { /*boost::lock_guard<decltype(_mutex)> guard(_root->_mutex);*/return internRemoveFromRoot(obj); }
-    inline Intersection OctreeNode::insert(Transformable* obj)
-    { /*boost::lock_guard<decltype(_mutex)> guard(_root->_mutex);*/return internInsert(obj); }
-    inline bool OctreeNode::removeFromRoot(Transformable* obj)
-    { /*boost::lock_guard<decltype(_mutex)> guard(_root->_mutex);*/return internRemoveFromRoot(obj); }
-    inline bool OctreeNode::removeFromLeaf(Transformable* obj)
-    { /*boost::lock_guard<decltype(_mutex)> guard(_root->_mutex);*/return internRemoveFromLeaf(obj); }
+    inline bool OctreeNode::remove(Transformable* obj) { return internRemoveFromRoot(obj); }
+    inline Intersection OctreeNode::insert(Transformable* obj) { return internInsert(obj); }
+    inline bool OctreeNode::removeFromRoot(Transformable* obj){ return internRemoveFromRoot(obj); }
+    inline bool OctreeNode::removeFromLeaf(Transformable* obj) { return internRemoveFromLeaf(obj); }
 
 }
 }
