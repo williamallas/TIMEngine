@@ -44,7 +44,7 @@ namespace scene
         friend std::ostream& operator<< (std::ostream& stream, const Sphere& t) { stream << t.str(); return stream; }
 
     private:
-        vec3 _center = {0};
+        vec3 _center = vec3();
         float _radius = 0;
     };
 

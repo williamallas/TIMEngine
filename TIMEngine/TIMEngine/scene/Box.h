@@ -77,18 +77,18 @@ namespace scene
     inline Box& Box::setMin(const vec3& v) { for(size_t i=0 ; i<3 ; i++)_box[i].x()=v[i]; return *this; }
     inline Box& Box::setMax(const vec3& v) { for(size_t i=0 ; i<3 ; i++)_box[i].y()=v[i]; return *this; }
 
-    inline vec3 Box::min() const { return {_box[0].x(), _box[1].x(), _box[2].x()}; }
-    inline vec3 Box::max() const { return {_box[0].y(), _box[1].y(), _box[2].y()}; }
+    inline vec3 Box::min() const { return vec3(_box[0].x(), _box[1].x(), _box[2].x()); }
+    inline vec3 Box::max() const { return vec3(_box[0].y(), _box[1].y(), _box[2].y()); }
     inline vec3 Box::center() const { return vec3(_box[0].x()+_box[0].y() , _box[1].x()+_box[1].y(), _box[2].x()+_box[2].y())*0.5; }
     inline vec3 Box::size() const { return max()-min(); }
     inline vec3 Box::halfSize() const { return size()*0.5; }
 
     inline Box Box::max(const Box& box) const
     {
-        return Box( { {std::min(box._box[0].x(), _box[0].x()),std::max(box._box[0].y(), _box[0].y())},
-                             {std::min(box._box[1].x(), _box[1].x()),std::max(box._box[1].y(), _box[1].y())},
-                             {std::min(box._box[2].x(), _box[2].x()),std::max(box._box[2].y(), _box[2].y())}
-                      } );
+        vec2 ret[] = { vec2(std::min(box._box[0].x(), _box[0].x()),std::max(box._box[0].y(), _box[0].y())),
+                       vec2(std::min(box._box[1].x(), _box[1].x()),std::max(box._box[1].y(), _box[1].y())),
+                       vec2(std::min(box._box[2].x(), _box[2].x()),std::max(box._box[2].y(), _box[2].y())) };
+        return Box( Vector<vec2, 3> (ret) );
     }
 
     /* box */

@@ -5,6 +5,7 @@
 #include <boost/container/set.hpp>
 #include <boost/container/vector.hpp>
 #include <boost/thread.hpp>
+#include <queue>
 
 namespace tim
 {

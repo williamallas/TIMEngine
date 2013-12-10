@@ -10,8 +10,12 @@ namespace scene
 
 Transformable::~Transformable()
 {
-    if(_sceneManager)
-        _sceneManager->removeTransformable(this);
+
+}
+
+void Transformable::move()
+{
+    _sceneManager->move(this);
 }
 
 }

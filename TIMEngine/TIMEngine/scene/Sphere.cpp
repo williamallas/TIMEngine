@@ -16,9 +16,9 @@ Sphere::~Sphere() { }
 
 Box Sphere::toBox() const
 {
-    return Box({{_center.x()-_radius, _center.x()+_radius},
-                {_center.y()-_radius, _center.y()+_radius},
-                {_center.z()-_radius, _center.z()+_radius}});
+    return Box(Vector3<vec2>(vec2(_center.x()-_radius, _center.x()+_radius),
+                             vec2(_center.y()-_radius, _center.y()+_radius),
+                             vec2(_center.z()-_radius, _center.z()+_radius)));
 }
 
 /* AABB */

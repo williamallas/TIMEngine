@@ -10,11 +10,16 @@ namespace tim
     using namespace core;
 namespace scene
 {
-    struct BoundingVolume
+    class BoundingVolume
     {
+    public:
+        BoundingVolume() : obb(nullptr) {}
+        ~BoundingVolume() { delete obb; };
+
         Sphere sphere;
-        OrientedBox obb;
-        bool accurate;
+        OrientedBox* obb;
+
+        const OrientedBox& box() const { return *obb; }
     };
 
 }

@@ -21,9 +21,7 @@ namespace scene
         SceneContainer() {};
         virtual ~SceneContainer() {};
 
-        //decltype(_container.begin()) begin() { return _container.begin(); }
-        //decltype(_container.begin()) end() { return _container.end(); }
-
+        const T& container() const { return _container; }
         const Box& box() const { return _box; }
 
     };

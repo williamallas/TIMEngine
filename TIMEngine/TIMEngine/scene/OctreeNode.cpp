@@ -1,4 +1,5 @@
 #include "OctreeNode.h"
+#include "SceneManager.h"
 
 #include "MemoryLoggerOn.h"
 namespace tim
@@ -8,11 +9,12 @@ namespace scene
 {
 
 const vec3 OctreeNode::SIZE_ROOT = vec3(4096);
-const size_t OctreeNode::MAX_DEPTH = 6;
+const size_t OctreeNode::MAX_DEPTH = 5;
 const size_t OctreeNode::MAX_ELEMENT = 32;
 
-OctreeNode::OctreeNode(const vec3& center) : TransformableContainer()
+OctreeNode::OctreeNode(const vec3& center, SceneManager* scene) : TransformableContainer()
 {
+    _sceneManager = scene;
     _box.setMin(center - vec3(SIZE_ROOT.x()/2));
     _box.setMax(center + vec3(SIZE_ROOT.x()/2));
 
@@ -25,8 +27,9 @@ OctreeNode::OctreeNode(const vec3& center) : TransformableContainer()
         _child[i] = nullptr;
 }
 
-OctreeNode::OctreeNode(const vec3& center, OctreeNode* parent, OctreeNode* root, int depth) : TransformableContainer()
+OctreeNode::OctreeNode(const vec3& center, SceneManager* scene, OctreeNode* parent, OctreeNode* root, int depth) : TransformableContainer()
 {
+    _sceneManager = scene;
     _box.setMin(center - parent->box().halfSize()/2);
     _box.setMax(center + parent->box().halfSize()/2);
 
@@ -41,7 +44,8 @@ OctreeNode::OctreeNode(const vec3& center, OctreeNode* parent, OctreeNode* root,
 
 OctreeNode::~OctreeNode()
 {
-    boost::lock_guard<decltype(_mutex)> guard(_mutex);
+    if(!_actionStack.empty())
+        _sceneManager->deferenceModifiedNode(this);
 
     if(_isLeaf)
     {
@@ -55,100 +59,160 @@ OctreeNode::~OctreeNode()
             delete _child[i];
         }
     }
+
+    if(_depth == 0)
+    {
+        for(size_t i=0 ; i<_container.size() ; i++)
+        {
+            _container[i]->setLowestCommonParent(nullptr);
+            _container[i]->_sceneManager=nullptr;
+        }
+    }
 }
 
-Intersection OctreeNode::internInsert(Transformable* obj)
+Intersection OctreeNode::insert(Transformable* obj, bool fromToNode)
 {
     Intersection inter;
-    if(obj->volume().accurate)
-        inter = _box.collide(obj->volume().obb);
+    if(obj->volume().obb)
+        inter = _box.collide(obj->volume().box());
     else
         inter = _box.collide(obj->volume().sphere);
 
     if(inter==OUTSIDE)
         return OUTSIDE;
-
-    boost::lock_guard<decltype(_mutex)> guard(_mutex);
-
-    _container.push_back(obj);
-
-    if(_container.size() >= MAX_ELEMENT && _depth < MAX_DEPTH && _isLeaf)
+    else if(inter==INSIDE)
     {
-
-        _mutex.unlock();
-        toNode();
-        _mutex.lock();
+        if(obj->lowestCommonParent() && ((OctreeNode*)obj->lowestCommonParent())->depth() < _depth)
+            obj->setLowestCommonParent(this);
+        else if(!obj->lowestCommonParent())
+            obj->setLowestCommonParent(this);
     }
-    else if(_isLeaf)
+
+    NodeAction act = { obj, NodeAction::ADD };
+    {
+        boost::lock_guard<decltype(_mutex)> g(_mutex);
+        _actionStack.push(act);
+    }
+
+    if(!fromToNode)
+        _sceneManager->referenceModifiedNode(this);
+
+    if(_isLeaf)
     {
         obj->addContainer(this);
     }
     else
     {
-        _mutex.unlock();
         for(size_t i=0 ; i<8 ; i++)
         {
-            if(_child[i]->internInsert(obj) == INSIDE)
+            if(_child[i]->insert(obj, fromToNode) == INSIDE)
+            {
                 break;
+            }
         }
-        _mutex.lock();
     }
 
     return inter;
 }
 
-bool OctreeNode::internRemoveFromRoot(Transformable* obj)
+bool OctreeNode::internRemoveTo(Transformable* obj, OctreeNode* to)
 {
-    auto it = std::find(_container.begin(), _container.end(), obj);
-    if(it == _container.end())
-        return false;
-
-    _container.erase(it);
-    if(_isLeaf)
+    NodeAction act = { obj, NodeAction::REMOVE };
     {
-        obj->removeContainer(this);
+        boost::lock_guard<decltype(_mutex)> g(_mutex);
+        _actionStack.push(act);
     }
-    else
+    _sceneManager->referenceModifiedNode(this);
+
+    if(_parent)
     {
-        if(_container.size() < MAX_ELEMENT)
-            toLeaf();
-        else
-        {
-            for(size_t i=0 ; i<8 ; i++)
-                _child[i]->internRemoveFromRoot(obj);
-        }
+        _parent->removeTo(obj, to);
     }
 
     return true;
 }
 
-bool OctreeNode::internRemoveFromLeaf(Transformable* obj)
+bool OctreeNode::internInsertInChild(Transformable* obj)
 {
-    auto it = std::find(_container.begin(), _container.end(), obj);
-    if(it == _container.end())
-        return false;
+    bool findInside=false;
+    for(size_t i=0 ; i<8 ; i++)
+    {
+        if(_child[i]->insert(obj, false) == INSIDE)
+        {
+            findInside=true;
+            break;
+        }
+    }
 
-    _container.erase(it);
+    if(!findInside)
+    {
+        OctreeNode* LCP = (OctreeNode*)obj->lowestCommonParent();
+        if(LCP && _depth >= LCP->_depth)
+            obj->setLowestCommonParent(this);
+        else if(!LCP)
+            obj->setLowestCommonParent(this);
+    }
+
+    return true;
+}
+
+bool OctreeNode::remove(Transformable* obj)
+{
+    NodeAction act = { obj, NodeAction::REMOVE };
+    {
+        boost::lock_guard<decltype(_mutex)> g(_mutex);
+        _actionStack.push(act);
+    }
+    _sceneManager->referenceModifiedNode(this);
+
     if(_isLeaf)
     {
         obj->removeContainer(this);
     }
-    else
+
+    return  true;
+}
+
+void OctreeNode::flushDepth()
+{
+    if(!_actionStack.empty())
+        _sceneManager->deferenceModifiedNode(this);
+
+    while(!_actionStack.empty())
     {
-        if(_container.size() < MAX_ELEMENT)
-            toLeaf();
+        NodeAction act = _actionStack.front();
+        _actionStack.pop();
+
+        switch(act.action)
+        {
+        case NodeAction::ADD:
+            _container.push_back(act.obj);
+            break;
+        case NodeAction::REMOVE:
+            auto it=std::find(_container.begin(), _container.end(), act.obj);
+            if(it != _container.end())
+                _container.erase(it);
+            break;
+        }
     }
 
-    if(_parent)
-        _parent->internRemoveFromLeaf(obj);
-
-    return true;
+    if(_isLeaf)
+    {
+        if(_container.size() >= MAX_ELEMENT && _depth < MAX_DEPTH)
+        {
+            toNode();
+            for(size_t i=0 ; i<8 ; i++)
+                _child[i]->flushDepth();
+        }
+    }
+    else if(_container.size() < MAX_ELEMENT/2)
+    {
+        toLeaf();
+    }
 }
 
 void OctreeNode::toNode()
 {
-    _mutex.lock();
-
     vec3 center = _box.center();
     vec3 half = _box.halfSize()*0.5;
 
@@ -159,23 +223,22 @@ void OctreeNode::toNode()
     {
         _child[index] = new OctreeNode({half.x()*i+center.x(),
                                         half.y()*j+center.y(),
-                                        half.z()*k+center.z()}, this, _root, _depth+1);
+                                        half.z()*k+center.z()}, _sceneManager, this, _root, _depth+1);
         index++;
     }
 
     _isLeaf = false;
 
     for(size_t j=0 ; j<_container.size() ; j++)
+    {
         _container[j]->removeContainer(this);
+    }
 
-    decltype(_container) copyVec = _container;
-    _mutex.unlock();
-
-    for(size_t j=0 ; j<copyVec.size() ; j++)
+    for(size_t j=0 ; j<_container.size() ; j++)
     {
         for(size_t i=0 ; i<8 ; i++)
         {
-            if(_child[i]->internInsert(copyVec[j]) == INSIDE)
+            if(_child[i]->insert(_container[j], true) == INSIDE)
                 break;
         }
     }
@@ -183,8 +246,6 @@ void OctreeNode::toNode()
 
 void OctreeNode::toLeaf()
 {
-    boost::lock_guard<decltype(_mutex)> guard(_mutex);
-
     for(size_t i=0 ; i<8 ; i++)
     {
         delete _child[i];
@@ -194,8 +255,47 @@ void OctreeNode::toLeaf()
     _isLeaf = true;
 
     for(size_t j=0 ; j<_container.size() ; j++)
+    {
         _container[j]->addContainer(this);
+
+        bool in=false;
+        if(_container[j]->volume().obb)
+            in=_box.inside(_container[j]->volume().box());
+        else
+            in=_box.inside(_container[j]->volume().sphere);
+
+        if(in)
+            _container[j]->setLowestCommonParent(this);
+    }
 }
+
+std::string OctreeNode::str() const
+{
+    std::string s;
+    str(s);
+    return s;
+}
+
+void OctreeNode::str(std::string& s) const
+{
+    for(size_t i=0 ; i<_depth ; i++)
+        s += "  ";
+    s += "->"+StringUtils(_depth).str()+":";
+    s+="\n";
+
+    if(_isLeaf)
+    for(size_t i=0 ; i<_container.size() ; i++)
+    {
+        for(size_t j=0 ; j<_depth ; j++)
+            s += "  ";
+        s+="   "+StringUtils(_container[i]).str()+"\n";
+    }
+
+    if(!_isLeaf)
+        for(size_t i=0 ; i<8 ; i++)
+            _child[i]->str(s);
+}
+
 
 }
 }

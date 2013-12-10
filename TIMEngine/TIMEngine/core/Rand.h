@@ -18,24 +18,24 @@ namespace core
     public:
 
         Rand(int seed) { _generator.seed(seed); }
-        float next_f() { return _frand_range(_generator); }
-        float next_i() { return _rand_range(_generator); }
+        float next_f() { return frand_range(_generator); }
+        float next_i() { return _generator(); }
         void setSeed(int seed) { _generator.seed(seed); }
 
         /* Static */
         static float frand() { return frand_range(generator); }
 
-        static float frand(vec2 range)
+        static float frand(const vec2& range)
         {
-            boost::random::uniform_int_distribution<> dis(range.x(), range.y());
+            boost::random::uniform_real_distribution<> dis(range.x(), range.y());
             return dis(generator);
         }
 
-        static int rand() { return rand_range(generator); }
+        static int rand() { return generator(); }
 
-        static float rand(ivec2 range)
+        static int rand(const ivec2& range)
         {
-            boost::random::uniform_real_distribution<> dis(range.x(), range.y());
+            boost::random::uniform_int_distribution<> dis(range.x(), range.y());
             return dis(generator);
         }
 
@@ -43,12 +43,9 @@ namespace core
 
     private:
         boost::random::taus88 _generator;
-        boost::random::uniform_01<> _frand_range;
-        boost::random::uniform_int_distribution<> _rand_range;
 
         static boost::random::taus88 generator;
         static boost::random::uniform_01<> frand_range;
-        static boost::random::uniform_int_distribution<> rand_range;
     };
 
 }

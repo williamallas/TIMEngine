@@ -22,15 +22,20 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
+					<Add option="-fomit-frame-pointer" />
+					<Add option="-fexpensive-optimizations" />
 					<Add option="-O3" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add option="-O3" />
+					<Add option="-flto" />
 				</Linker>
 			</Target>
 		</Build>
 		<Compiler>
 			<Add option="-std=c++11" />
+			<Add option="-flto" />
 			<Add directory="TIMEngine" />
 			<Add directory="TIMEngine/core" />
 			<Add directory="../Lib/boost" />
@@ -39,6 +44,7 @@
 			<Add library="..\Lib\boost\boost-mingw\boost\bin.v2\libs\system\build\gcc-mingw-4.7.1\release\threading-multi\libboost_system-mgw47-mt-1_55.dll.a" />
 			<Add library="..\Lib\boost\boost-mingw\boost\bin.v2\libs\thread\build\gcc-mingw-4.7.1\release\threading-multi\libboost_thread-mgw47-mt-1_55.dll.a" />
 			<Add library="..\Lib\boost\boost-mingw\boost\bin.v2\libs\atomic\build\gcc-mingw-4.7.1\release\threading-multi\libboost_atomic-mgw47-mt-1_55.dll.a" />
+			<Add library="..\Lib\boost\boost-mingw\boost\bin.v2\libs\timer\build\gcc-mingw-4.7.1\release\threading-multi\libboost_timer-mgw47-mt-1_55.dll.a" />
 		</Linker>
 		<Unit filename="TIMEngine/core/Exception.h" />
 		<Unit filename="TIMEngine/core/Logger.h" />
@@ -74,8 +80,6 @@
 		<Unit filename="TIMEngine/scene/Transformable.cpp" />
 		<Unit filename="TIMEngine/scene/Transformable.h" />
 		<Unit filename="TIMEngine/scene/scene.h" />
-		<Unit filename="Test.cpp" />
-		<Unit filename="Test.h" />
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<code_completion />
