@@ -339,7 +339,7 @@ namespace core
             return m;
         }
 
-        static const Matrix4 & BIAS()
+        static const Matrix4& BIAS()
         {
             static const Matrix4 m = { 0.5,0,0,0.5,
                                        0,0.5,0,0.5,
@@ -348,7 +348,7 @@ namespace core
             return m;
         }
 
-        static const Matrix4 & InvBIAS()
+        static const Matrix4& InvBIAS()
         {
             static const Matrix4 m = BIAS().inversed();
             return m;
