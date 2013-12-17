@@ -25,7 +25,7 @@ namespace core
     private:
         static T* _instance;
 
-        Singleton(const Singleton &);
+        Singleton(const Singleton&);
         Singleton& operator=(const Singleton&);
     };
 
