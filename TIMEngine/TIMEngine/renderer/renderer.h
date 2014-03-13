@@ -5,8 +5,11 @@
 
 #include "GLState.h"
 #include "MeshBuffers.h"
-#include "MetaShader.h"
 #include "Shader.h"
+#include "MaterialInstance.h"
+#include "MaterialRenderer.h"
+#include "TextureSampler.h"
+#include "PixelBuffer.h"
 
 namespace tim
 {

@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <mutex>
+#include "ThreadPool.h"
 #include "Exception.h"
 #include "Option.h"
 #include "Rand.h"
@@ -12,6 +13,9 @@
 #include "Vector.h"
 #include "Matrix.h"
 #include "type.h"
+#include "Plan.h"
+#include "Sphere.h"
+#include "Box.h"
 
 #include "MemoryLoggerOn.h"
 namespace tim
@@ -22,6 +26,7 @@ namespace core
     void quit();
 }
 }
+
 #include "MemoryLoggerOff.h"
 
 #endif // CORE_H_INCLUDED

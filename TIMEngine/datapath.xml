@@ -1,0 +1,57 @@
+<DataGroup name="">
+	<MeshData name="sphere" type="OBJ" path=sphere.obj />
+	<MeshData name="box" type="OBJ" path=cube.obj />
+	<MeshData name="tor" type="OBJ" path=tor.obj />
+	<MeshData name="tank" type="OBJ" path=tank.obj />
+	<MeshData name="terrain" type="OBJ" path=map.obj />
+
+	<ShaderData name="drawQuad" option="NO_MATRIX USE_TEXTURE" />
+	<ShaderData name="basic" option="" />
+	<ShaderData name="basicLightTest" option="DIRECTIONAL_LIGHT_TEST" />
+	<ShaderData name="texture" option="USE_TEXTURE" />
+	<ShaderData name="textureLightTest" option="DIRECTIONAL_LIGHT_TEST USE_TEXTURE" />
+	
+	<TextureData name="test" default=true repeat=true >test.png</TextureData> 
+	
+	<MaterialPass name=Sphere >
+		<Material name=Sphere>
+			<mesh>sphere</mesh>
+			<shader>textureLightTest</shader>
+			<color>1,1,1,0.15</color>
+			<material>0.8,1,1,0</material>
+			<texture>test</texture>
+			
+			<blend>true</blend>
+			<writeDepth>false</writeDepth>
+			<blendFunc>SRC_ALPHA,ONE_MINUS_SRC_ALPHA</blendFunc>
+			<blendEquation>ADD</blendEquation>
+		</Material>
+	</MaterialPass>
+	
+	<MaterialPass name=Tor >
+		<Material name=Tor>
+			<mesh>tor</mesh>
+			<shader>basicLightTest</shader>
+			<color>0,1,1,1</color>
+			<material>0.8,1,1,0</material>
+		</Material>
+	</MaterialPass>
+	
+	<MaterialPass name=Tank >
+		<Material name=Tank>
+			<mesh>tank</mesh>
+			<shader>basicLightTest</shader>
+			<color>0,0.5,0.05,0.2</color>
+			<material>0.8,1,1,0</material>
+		</Material>
+	</MaterialPass>
+	
+	<MaterialPass name=Terrain >
+		<Material name=Terrain>
+			<mesh>terrain</mesh>
+			<shader>basicLightTest</shader>
+			<color>0.68,0.34,0.039,0.2</color>
+			<material>0.8,1,0,0</material>
+		</Material>
+	</MaterialPass>
+</DataGroup>

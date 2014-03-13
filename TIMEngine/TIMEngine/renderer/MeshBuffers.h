@@ -14,62 +14,53 @@ namespace renderer
     {
 
     public:
-        MeshBuffers() {}
-        MeshBuffers(const boost::container::vector<VertexBuffer*>&, IndexBuffer*);
-        MeshBuffers(std::initializer_list<VertexBuffer*>, IndexBuffer*);
-        virtual ~MeshBuffers() { delete[] _vertexBuffers; }
+        MeshBuffers(VertexBuffer* vb, IndexBuffer* ib);
 
-        MeshBuffers& setIndexBuffer(IndexBuffer*);
-        MeshBuffers& setVertexBuffers(const boost::container::vector<VertexBuffer*>&);
-        MeshBuffers& setVertexBuffers(std::initializer_list<VertexBuffer*>);
+        virtual ~MeshBuffers()
+        {
+            delete _vertexBuffer;
+            delete _indexBuffer;
+        }
+
         MeshBuffers& setPrimitive(VertexMode primitive);
 
         IndexBuffer* indexBuffer() const;
-        VertexBuffer* vertexBuffer(size_t) const;
-        size_t nbVertexBuffers() const;
+        VertexBuffer* vertexBuffer() const;
         VertexMode primitive() const;
+
+        void swap(MeshBuffers*);
+
+        bool isComplete() const;
+        void setComplete(bool);
 
     private:
         IndexBuffer* _indexBuffer = nullptr;
-        size_t _vertexBuffersSize = 0;
-        VertexBuffer** _vertexBuffers = nullptr;
+        VertexBuffer* _vertexBuffer = nullptr;
+        bool _isStreaming=false;
 
         VertexMode _primitive = VertexMode::TRIANGLES;
     };
 
-    inline MeshBuffers::MeshBuffers(const boost::container::vector<VertexBuffer*>& vb, IndexBuffer* ib)
-    {
-        setIndexBuffer(ib);
-        setVertexBuffers(vb);
-    }
-
-    inline MeshBuffers::MeshBuffers(std::initializer_list<VertexBuffer*> vb, IndexBuffer* ib)
-    {
-        setIndexBuffer(ib);
-        setVertexBuffers(boost::container::vector<VertexBuffer*>(vb.begin(), vb.end()));
-    }
-
-    inline MeshBuffers& MeshBuffers::setIndexBuffer(IndexBuffer* ib) { _indexBuffer = ib; return *this; }
-
-    inline MeshBuffers& MeshBuffers::setVertexBuffers(const boost::container::vector<VertexBuffer*>& vb)
-    {
-        delete[] _vertexBuffers;
-        _vertexBuffers = new VertexBuffer*[vb.size()];
-        _vertexBuffersSize = vb.size();
-        for(size_t i=0 ; i<vb.size() ; i++) { _vertexBuffers[i] = vb[i]; }
-
-        return *this;
-    }
-
+    inline MeshBuffers::MeshBuffers(VertexBuffer* vb, IndexBuffer* ib) : _vertexBuffer(vb), _indexBuffer(ib) { if(_vertexBuffer)_vertexBuffer->computeBoundingVolume(); }
     inline MeshBuffers& MeshBuffers::setPrimitive(VertexMode primitive) { _primitive = primitive; }
-
-    inline MeshBuffers& MeshBuffers::setVertexBuffers(std::initializer_list<VertexBuffer*> vb)
-    { setVertexBuffers(boost::container::vector<VertexBuffer*>(vb.begin(), vb.end())); }
-
-    inline VertexBuffer* MeshBuffers::vertexBuffer(size_t index) const { _vertexBuffers[index]; }
-    inline size_t MeshBuffers::nbVertexBuffers() const { return _vertexBuffersSize; }
+    inline VertexBuffer* MeshBuffers::vertexBuffer() const { return _vertexBuffer; }
     inline IndexBuffer* MeshBuffers::indexBuffer() const { return _indexBuffer; }
     inline VertexMode MeshBuffers::primitive() const { return _primitive; }
+    inline bool MeshBuffers::isComplete() const { return !_isStreaming; }
+
+    inline void MeshBuffers::swap(MeshBuffers* mb)
+    {
+        boost::swap(_vertexBuffer, mb->_vertexBuffer);
+        boost::swap(_indexBuffer, mb->_indexBuffer);
+        boost::swap(_primitive, mb->_primitive);
+        _isStreaming=false;
+    }
+
+    inline void MeshBuffers::setComplete(bool b)
+    {
+        if(!_indexBuffer && !_vertexBuffer)
+            _isStreaming = !b;
+    }
 
 }
 }

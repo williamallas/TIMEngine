@@ -12,7 +12,7 @@ namespace scene
     template <class T>
     class SceneContainer
     {
-
+        friend class SceneManager;
     protected:
         T _container;
         Box _box;

@@ -36,12 +36,14 @@ float* VertexBuffer::createBuffer(VertexFormat format, size_t size)
     _formatSize = vertexFormatSize(format);
     _data = new float[_formatSize*size];
 
-    glGenBuffers(1, &_bufferId);
     return _data;
 }
 
-void VertexBuffer::uploadOnGpu(bool sendData, bool staticData) const
+void VertexBuffer::uploadOnGpu(bool sendData, bool staticData)
 {
+    if(_bufferId == 0)
+        glGenBuffers(1, &_bufferId);
+
     openGL.bindArrayBuffer(_bufferId);
 
     glBufferData(GL_ARRAY_BUFFER,
@@ -73,6 +75,52 @@ void VertexBuffer::freeData()
 {
     delete[] _data;
     _data = nullptr;
+}
+
+void VertexBuffer::bindVertexAttrib(uint position, const VertexAttrib& attrib)
+{
+    #define BUFFER_OFFSET(a) ((char*)NULL + (a))
+    if(_attribBinding[position] != attrib)
+    {
+        _attribBinding[position] = attrib;
+        if(!attrib.nbComponent)
+            glDisableVertexAttribArray(position);
+        else
+            glEnableVertexAttribArray(position);
+    }
+
+    if(attrib.nbComponent)
+        glVertexAttribPointer(position, attrib.nbComponent, GL_FLOAT, 0, _formatSize*sizeof(float), BUFFER_OFFSET(attrib.offset*sizeof(float)));
+}
+
+void VertexBuffer::computeBoundingVolume()
+{
+    vec2 x(INFINITY, -INFINITY),y(INFINITY, -INFINITY),z(INFINITY, -INFINITY);
+
+    for(size_t i=0 ; i<_size ; i++)
+    {
+        vec3 v={_data[i*_formatSize], _data[i*_formatSize+1], _data[i*_formatSize+2]};
+        x.set(std::min(v.x(), x.x()), 0);
+        x.set(std::max(v.x(), x.y()), 1);
+
+        y.set(std::min(v.y(), y.x()), 0);
+        y.set(std::max(v.y(), y.y()), 1);
+
+        z.set(std::min(v.z(), z.x()), 0);
+        z.set(std::max(v.z(), z.y()), 1);
+    }
+
+    _aabb = Box({x,y,z});
+
+    vec3 center = _aabb.center();
+
+    float rad2=0;
+    for(size_t i=0 ; i<_size ; i++)
+    {
+        vec3 v={_data[i*_formatSize], _data[i*_formatSize+1], _data[i*_formatSize+2]};
+        rad2 = std::max(rad2, (v-center).length2());
+    }
+    _bSphere = Sphere(center, sqrtf(rad2));
 }
 
 }

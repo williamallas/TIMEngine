@@ -1,3 +1,5 @@
+#ifdef USE_OCTREE
+
 #include "OctreeNode.h"
 #include "SceneManager.h"
 
@@ -299,3 +301,5 @@ void OctreeNode::str(std::string& s) const
 
 }
 }
+
+#endif

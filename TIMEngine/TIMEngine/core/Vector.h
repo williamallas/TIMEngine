@@ -82,8 +82,9 @@ namespace core
 
         T& operator[](size_t i) { return _val[i]; }
         const T& operator[](size_t i) const { return _val[i]; }
+        const T* data() const { return _val; }
 
-        T dot(const Vector<T,N> & v) const
+        T dot(const Vector<T,N>& v) const
         {
              T res=0;
              for(size_t i=0;i<N;i++) res+=(_val[i]*v[i]);

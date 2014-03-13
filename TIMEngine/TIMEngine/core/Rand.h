@@ -19,7 +19,7 @@ namespace core
 
         Rand(int seed) { _generator.seed(seed); }
         float next_f() { return frand_range(_generator); }
-        float next_i() { return _generator(); }
+        size_t next_i() { return _generator(); }
         void setSeed(int seed) { _generator.seed(seed); }
 
         /* Static */
@@ -31,7 +31,7 @@ namespace core
             return dis(generator);
         }
 
-        static int rand() { return generator(); }
+        static size_t rand() { return generator(); }
 
         static int rand(const ivec2& range)
         {

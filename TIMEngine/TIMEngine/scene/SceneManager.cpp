@@ -14,11 +14,7 @@ SceneManager::SceneManager()
 
 SceneManager::~SceneManager()
 {
-    boost::lock_guard<decltype(_mutexSubScene)> guard(_mutexSubScene);
-    for(auto it : _subScene)
-    {
-        delete it.second;
-    }
+    clearScene();
 }
 
 std::string SceneManager::str() const
@@ -26,10 +22,11 @@ std::string SceneManager::str() const
     boost::lock_guard<decltype(_mutexSubScene)> guard(_mutexSubScene);
     std::string s;
     for(auto it : _subScene)
-        s += it.second->tree.str();
+        s += it.first.str() + it.second->tree.str();
     return s;
 }
 
+#ifdef USE_OCTREE
 bool SceneManager::removeTransformable(Transformable* obj, bool toRemove)
 {
     bool ret = true;
@@ -44,17 +41,8 @@ bool SceneManager::removeTransformable(Transformable* obj, bool toRemove)
     }
     else
     {
-        SubScene* scene = subScene(subSceneIndex(obj->volumeCenter()));
-        ret=scene->container.remove(obj);
-
-        boost::lock_guard<decltype(_mutexSubScene)> guard(_mutexSubScene);
-        for(auto it : scene->neighbors)
-        {
-            if(it.second->container.box().collide(obj->volume().sphere) != OUTSIDE)
-            {
-                it.second->container.remove(obj);
-            }
-        }
+        err("Error id:45618612\n");
+        exit(8);
     }
 
     obj->setLowestCommonParent(nullptr);
@@ -68,18 +56,64 @@ bool SceneManager::removeTransformable(Transformable* obj, bool toRemove)
 
     return ret;
 }
+#else
+
+bool SceneManager::removeTransformable(Transformable* obj)
+{
+    for(size_t i=0 ; i<obj->cells().size() ; i++)
+        reinterpret_cast<SceneGrid::Cell*>(obj->cells()[i].container)->remove(obj->cells()[i].index);
+    for(size_t i=0 ; i<obj->grids().size() ; i++)
+        reinterpret_cast<SceneGrid*>(obj->grids()[i].container)->remove(obj->grids()[i].index);
+
+    delete obj;
+
+    return true;
+}
 
 void SceneManager::move(Transformable* obj)
 {
-    boost::lock_guard<decltype(*obj)> objGuard(*obj);
-    auto container = obj->container();
+    if(obj->grids().size() == 1)
+    {
+        SceneGrid* grid=reinterpret_cast<SceneGrid*>(obj->grids()[0].container);
+        if(grid->box().inside(obj->volume().sphere))
+        {
+            for(size_t i=0 ; i<obj->cells().size() ; i++)
+                reinterpret_cast<SceneGrid::Cell*>(obj->cells()[i].container)->remove(obj->cells()[i].index);
 
+            obj->cells().clear();
+            grid->inject(obj);
+            return;
+        }
+    }
+
+    for(size_t i=0 ; i<obj->cells().size() ; i++)
+        reinterpret_cast<SceneGrid::Cell*>(obj->cells()[i].container)->remove(obj->cells()[i].index);
+    for(size_t i=0 ; i<obj->grids().size() ; i++)
+        reinterpret_cast<SceneGrid*>(obj->grids()[i].container)->remove(obj->grids()[i].index);
+
+    obj->grids().clear();
+    obj->cells().clear();
+
+    addCreatedTransformable(obj);
+}
+
+#endif
+
+
+#ifdef USE_OCTREE
+void SceneManager::move(Transformable* obj)
+{
+    boost::lock_guard<decltype(*obj)> objGuard(*obj);
+
+    auto& container = obj->container();
     if(container.size() == 1)
     {
         if(!obj->volume().obb)
         {
             if(reinterpret_cast<OctreeNode*>(container[0])->box().inside(obj->volume().sphere))
+            {
                 return;
+            }
         }
         else if(reinterpret_cast<OctreeNode*>(container[0])->box().inside(obj->volume().box()))
         {
@@ -88,10 +122,8 @@ void SceneManager::move(Transformable* obj)
     }
     else if(container.empty())
     {
-        obj->unlock();
-        removeTransformable(obj, false);
-        addCreatedTransformable(obj, false);
-        obj->lock();
+        err("Error id:518318\n");
+        exit(8);
         return;
     }
 
@@ -118,7 +150,6 @@ void SceneManager::move(Transformable* obj)
         }
         else
         {
-
             lowestParent->remove(obj);
             lowestParent = lowestParent->parent();
         }
@@ -127,11 +158,15 @@ void SceneManager::move(Transformable* obj)
     if(!lowestParent)
     {
         obj->unlock();
-        addCreatedTransformable(obj, true);
+        addCreatedTransformable(obj);
         obj->lock();
     }
 }
+#else
 
+
+
+#endif
 
 SceneManager::SubScene* SceneManager::subScene(const ivec3& pos)
 {
@@ -141,8 +176,14 @@ SceneManager::SubScene* SceneManager::subScene(const ivec3& pos)
     if(it != _subScene.end())
         return it->second;
 
+#ifdef USE_OCTREE
     SubScene * newSubScene = new SubScene( vec3({(float)pos.x(),(float)pos.y(),(float)pos.z()})
                                            * OctreeNode::SIZE_ROOT, this );
+#else
+    SubScene * newSubScene = new SubScene(vec3({(float)pos.x(),(float)pos.y(),(float)pos.z()})
+                                          * SceneGrid::GRID_SIZE, this);
+#endif
+
     _subScene[pos]=newSubScene;
 
     for(int x=-1 ; x<=1 ; x+=1)
@@ -177,7 +218,7 @@ Option<SceneManager::SubScene*> SceneManager::existSubScene(const ivec3& pos) co
         return Option<SceneManager::SubScene*>();
 }
 
-void SceneManager::insertInNeighbors(SubScene* sub, const ivec3& index, Transformable* obj, bool inOctree)
+void SceneManager::insertInNeighbors(SubScene* sub, const ivec3& index, Transformable* obj)
 {
     boost::lock_guard<decltype(_mutexSubScene)> guard(_mutexSubScene);
 
@@ -191,37 +232,44 @@ void SceneManager::insertInNeighbors(SubScene* sub, const ivec3& index, Transfor
         auto it = sub->neighbors.find(ivec3(x,y,z));
         if(it != sub->neighbors.end())
         {
-            if(inOctree)
-                it->second->tree.insert(obj, false);
-            else
-                it->second->container.insert(obj);
+        #ifdef USE_OCTREE
+            it->second->tree.insert(obj, false);
+        #else
+            it->second->tree.insert(obj);
+        #endif
         }
         else
         {
             vec3 center(index.x()+x, index.y()+y, index.z()+z);
+        #ifdef USE_OCTREE
             center *= OctreeNode::SIZE_ROOT;
             Box box(center-OctreeNode::SIZE_ROOT/2, center+OctreeNode::SIZE_ROOT/2);
+        #else
+            center *= SceneGrid::GRID_SIZE;
+            Box box(center-SceneGrid::GRID_SIZE/2, center+SceneGrid::GRID_SIZE/2);
+        #endif
 
             _mutexSubScene.unlock();
-            boost::lock_guard<decltype(*obj)> objGuard(*obj);
             if(obj->volume().obb)
             {
                 if(!box.outside(obj->volume().box()))
                 {
-                    if(inOctree)
-                        subScene(ivec3(x,y,z)+index)->tree.insert(obj,false);
-                    else
-                        subScene(ivec3(x,y,z)+index)->container.insert(obj);
+                #ifdef USE_OCTREE
+                    subScene(ivec3(x,y,z)+index)->tree.insert(obj,false);
+                #else
+                    subScene(ivec3(x,y,z)+index)->tree.insert(obj);
+                #endif
                 }
             }
             else
             {
                 if(!box.outside(obj->volume().sphere))
                 {
-                    if(inOctree)
-                        subScene(ivec3(x,y,z)+index)->tree.insert(obj, false);
-                    else
-                        subScene(ivec3(x,y,z)+index)->container.insert(obj);
+                #ifdef USE_OCTREE
+                    subScene(ivec3(x,y,z)+index)->tree.insert(obj,false);
+                #else
+                    subScene(ivec3(x,y,z)+index)->tree.insert(obj);
+                #endif
                 }
             }
             _mutexSubScene.lock();
@@ -229,30 +277,19 @@ void SceneManager::insertInNeighbors(SubScene* sub, const ivec3& index, Transfor
     }
 }
 
-void SceneManager::addCreatedTransformable(Transformable* obj, bool inOctree)
+void SceneManager::addCreatedTransformable(Transformable* obj)
 {
-    boost::lock_guard<decltype(*obj)> objGuard(*obj);
-
     ivec3 index = subSceneIndex(obj->volumeCenter());
     SubScene * scene = subScene(index);
 
-    if(inOctree)
+#ifdef USE_OCTREE
+   if(scene->tree.insert(obj, false) == INTERSECT)
+#else
+   if(scene->tree.insert(obj) == INTERSECT)
+#endif
+
     {
-        if(scene->tree.insert(obj, false) == INTERSECT)
-        {
-            obj->unlock();
-            insertInNeighbors(scene, index, obj, true);
-            obj->lock();
-        }
-    }
-    else
-    {
-        if(scene->container.insert(obj) == INTERSECT)
-        {
-            obj->unlock();
-            insertInNeighbors(scene, index, obj, false);
-            obj->lock();
-        }
+        insertInNeighbors(scene, index, obj);
     }
 }
 
@@ -260,16 +297,28 @@ void SceneManager::clearScene()
 {
     boost::lock_guard<decltype(_mutexSubScene)> guard(_mutexSubScene);
 
+#ifdef USE_OCTREE
     _toRemove.clear();
     for(auto it : _subScene)
     {
         _toRemove.insert(it.second->tree.container().begin(), it.second->tree.container().end());
-        _toRemove.insert(it.second->container.container().begin(), it.second->container.container().end());
         delete it.second;
     }
-    _subScene.clear();
+    flush();
+#else
+    boost::container::set<Transformable*> toRemove;
+    for(auto& it : _subScene)
+    {
+        toRemove.insert(it.second->tree._allObject.begin(), it.second->tree._allObject.end());
+        delete it.second;
+    }
 
-    flushOctree();
+    for(Transformable* o : toRemove)
+    {
+        delete o;
+    }
+#endif
+    _subScene.clear();
 }
 
 }

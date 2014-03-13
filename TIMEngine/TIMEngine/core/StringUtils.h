@@ -24,10 +24,16 @@ namespace core
         int toInt() const;
         float toFloat() const;
         double toDouble() const;
+        bool toBool() const;
+
         std::string& str();
+
+        bool isNumber() const;
 
         StringUtils& toLower();
         StringUtils& toUpper();
+
+        boost::container::vector<std::string> splitWord() const;
 
         std::string str() const;
         operator std::string() const;
@@ -62,6 +68,13 @@ inline std::string& StringUtils::str() {  return _str; }
 inline std::string StringUtils::str() const { return _str; }
 inline StringUtils::operator std::string() const { return _str; }
 
+inline bool StringUtils::toBool() const
+{
+    if(_str=="true" || _str=="yes" || _str=="1")
+        return true;
+    else return false;
+}
+
 inline StringUtils & StringUtils::toLower()
 {
     for(size_t i=0; i < _str.size(); i++)
@@ -74,6 +87,28 @@ inline StringUtils & StringUtils::toUpper()
     for(size_t i=0; i < _str.size(); i++)
         _str[i]=toupper(_str[i]);
     return *this;
+}
+
+inline bool StringUtils::isNumber() const
+{
+    std::istringstream iss(_str);
+    float f;
+    iss >> f;
+    return iss.eof() && !iss.fail();
+}
+
+inline boost::container::vector<std::string> StringUtils::splitWord() const
+{
+    std::istringstream iss(_str);
+    boost::container::vector<std::string> res;
+    while(!iss.eof())
+    {
+        std::string str;
+        iss >> str;
+        if(!str.empty())
+            res.push_back(std::move(str));
+    }
+    return res;
 }
 
 #include "MemoryLoggerOff.h"

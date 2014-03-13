@@ -88,6 +88,7 @@ namespace core
 
         const T& get(size_t i) const { return _val[i]; }
         T& get(size_t i) { return _val[i]; }
+        const T* data() const { return _val; }
 
         Matrix& transpose() { for(size_t i=0;i<N;i++)for(size_t j=0;j<N;j++)std::swap(_val[i*N+j], _val[j*N+i]); return *this; }
         Matrix transposed() const { Matrix m; for(size_t i=0;i<N;i++)for(size_t j=0;j<N;j++)m.get(i*N+j)=_val[j*N+i]; return m; }
@@ -95,7 +96,7 @@ namespace core
         Matrix& scale(const Vector<T,N-1>& v) { for(size_t i=0;i<N-1;i++)_val[i*N+i]*=v[i]; return *this; }
         Matrix scaled(const Vector<T,N-1>& v) const { Matrix m(*this); for(size_t i=0;i<N-1;i++)m.get(i*N+i)=_val[i*N+i]*v[i]; return m; }
 
-        Vector<T,N> translation() const { Vector<T,N> res; for(size_t i=0;i<N-1;i++)res[i]=_val[i*N+N-1]; return res; }
+        Vector<T,N-1> translation() const { Vector<T,N-1> res; for(size_t i=0;i<N-1;i++)res[i]=_val[i*N+N-1]; return res; }
         Matrix& translate(const Vector<T,N-1>& v) { for(size_t i=0;i<N-1;i++)_val[i*N+N-1]+=v[i]; return *this; }
         Matrix translated(const Vector<T,N-1>& v) const { Matrix m(*this); for(size_t i=0;i<N-1;i++)m.get(i*N+N-1)+=v[i]; return m; }
         Matrix& setTranslation(const Vector<T,N-1>& v) { for(size_t i=0;i<N-1;i++)_val[i*N+N-1]=v[i]; return *this; }
@@ -144,7 +145,7 @@ namespace core
             return inv;
         }
 
-        Matrix& inverse() { *this = this->inversed(); return *this; }
+        Matrix& invert() { *this = this->inverted(); return *this; }
 
         template<size_t A>
         Matrix<T,A> to() const

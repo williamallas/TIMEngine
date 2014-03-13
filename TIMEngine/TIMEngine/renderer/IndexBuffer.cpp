@@ -7,6 +7,8 @@ namespace tim
 namespace renderer
 {
 
+const uint IndexBuffer::GLPrimitive[6]={GL_TRIANGLES, GL_TRIANGLE_STRIP, GL_LINES, GL_LINE_STRIP, GL_POINTS, GL_QUADS}; // see VertexMode
+
 IndexBuffer::IndexBuffer()
 {
 
@@ -27,8 +29,11 @@ unsigned int* IndexBuffer::createBuffer(size_t size)
     return _data;
 }
 
-void IndexBuffer::uploadOnGpu(bool sendData, bool staticData) const
+void IndexBuffer::uploadOnGpu(bool sendData, bool staticData)
 {
+    if(_bufferId == 0)
+        glGenBuffers(1, &_bufferId);
+
     openGL.bindElementArrayBuffer(_bufferId);
 
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,

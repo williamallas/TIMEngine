@@ -18,5 +18,10 @@ void Transformable::move()
     _sceneManager->move(this);
 }
 
+void Transformable::deleteFromSceneManager()
+{
+    _sceneManager->removeTransformable(this);
+}
+
 }
 }

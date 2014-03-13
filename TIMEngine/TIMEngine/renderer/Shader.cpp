@@ -23,7 +23,13 @@ Option<Shader*> Shader::combine(const Option<uint>& vs, const Option<uint>& fs, 
 {
     if(!vs.hasValue() || !fs.hasValue())
     {
-        _lastLinkError = "Vertex or Fragment shader missing.";
+        _lastLinkError.clear();
+
+        if(!vs.hasValue())
+            _lastLinkError = "Vertex shader missing.\n";
+        if(!fs.hasValue())
+            _lastLinkError += "Fragment shader missing.\n";
+
         return Option<Shader*>();
     }
 
@@ -32,7 +38,10 @@ Option<Shader*> Shader::combine(const Option<uint>& vs, const Option<uint>& fs, 
     glAttachShader(id, fs.value());
 
     if(gs.hasValue())
-        glAttachShader(id, gs.value());
+    {
+        if(gs.value() != 0)
+            glAttachShader(id, gs.value());
+    }
 
     glLinkProgram(id);
 
@@ -53,15 +62,63 @@ Option<Shader*> Shader::combine(const Option<uint>& vs, const Option<uint>& fs, 
         return Option<Shader*>();
     }
 
-
     Shader* prog = new Shader;
     prog->_id = id;
+    prog->loadEngineAttrib();
+    prog->loadEngineUniform();
     return Option<Shader*>(prog);
 }
 
 const std::string& Shader::lastLinkError()
 {
     return _lastLinkError;
+}
+
+void Shader::loadEngineUniform()
+{
+    _engineUniform[EngineUniform::MODEL] = glGetUniformLocation(_id, "model");
+    _engineUniform[EngineUniform::VIEW] = glGetUniformLocation(_id, "view");
+    _engineUniform[EngineUniform::PROJ] = glGetUniformLocation(_id, "projection");
+    _engineUniform[EngineUniform::PROJVIEW] = glGetUniformLocation(_id, "projView");
+    _engineUniform[EngineUniform::INV_VIEW] = glGetUniformLocation(_id, "invView");
+    _engineUniform[EngineUniform::INV_PROJVIEW] = glGetUniformLocation(_id, "invProjView");
+
+    _engineUniform[EngineUniform::COLOR] = glGetUniformLocation(_id, "color");
+    _engineUniform[EngineUniform::MATERIAL] = glGetUniformLocation(_id, "material");
+    _engineUniform[EngineUniform::EXPONENT] = glGetUniformLocation(_id, "exponent");
+
+    _engineUniform[EngineUniform::TIME] = glGetUniformLocation(_id, "time");
+    _engineUniform[EngineUniform::FRAME_TIME] = glGetUniformLocation(_id, "timeFrame");
+    _engineUniform[EngineUniform::CAMERA_WORLD] = glGetUniformLocation(_id, "cameraWorld");
+
+    openGL.bindShader(_id);
+
+    bool findOne=false;
+    for(int i=0 ; i<MAX_TEXTURE_UNIT ; i++)
+    {
+        _uniformTextureId[i] = glGetUniformLocation(_id, (std::string("texture")+StringUtils(i).str()).c_str());
+        findOne |= (_uniformTextureId[i]>=0);
+        if(_uniformTextureId[i] >= 0)
+            glUniform1i(_uniformTextureId[i], i);
+    }
+
+    if(!findOne)
+    {
+        for(int i=0 ; i<MAX_TEXTURE_UNIT ; i++)
+        {
+            _uniformTextureId[i] = glGetUniformLocation(_id, (std::string("texture[")+StringUtils(i).str()+"]").c_str());
+            if(_uniformTextureId[i] >= 0)
+                glUniform1i(_uniformTextureId[i], i);
+        }
+    }
+}
+
+void Shader::loadEngineAttrib()
+{
+    _engineAttrib[EngineAttrib::VERTEX] = glGetAttribLocation(_id, "vertex");
+    _engineAttrib[EngineAttrib::NORMAL] = glGetAttribLocation(_id, "normal");
+    _engineAttrib[EngineAttrib::TEXCOORD] = glGetAttribLocation(_id, "texCoord");
+    _engineAttrib[EngineAttrib::TANGENT] = glGetAttribLocation(_id, "tangent");
 }
 
 }

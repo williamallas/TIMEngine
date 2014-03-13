@@ -15,56 +15,77 @@ namespace scene
 {
     class Transformable;
     class SceneManager;
+    class SceneGrid;
 
     typedef SceneContainer<boost::container::vector<Transformable*> > TransformableContainer;
 
     class Transformable
     {
         friend class SceneManager;
+    #ifdef USE_OCTREE
         friend class OctreeNode;
-        friend class ArraySceneContainer;
+    #else
+        friend class SceneGrid;
+    #endif
 
     public:
         const BoundingVolume& volume() const;
         const vec3& volumeCenter() const;
         SceneManager* sceneManager() const;
 
-        void lock() const;
-        void unlock() const;
-
         void move();
 
     private:
-        boost::container::vector<TransformableContainer*> _parentsContainer;
+    #ifdef USE_OCTREE
         TransformableContainer* _lowestCommonParent;
-        mutable boost::mutex _mutex; // protect _parentsContainer
+        boost::container::vector<TransformableContainer*> _parentsContainer;
+
+        /*Containers */
+        void clearContainer();
+        const boost::container::vector<TransformableContainer*>& container() const { return _parentsContainer; }
+        Transformable& addContainer(TransformableContainer*);
+        bool removeContainer(TransformableContainer*);
+    #else
+        struct DataContainer
+        {
+            void* container;
+            size_t index;
+        };
+        boost::container::vector<DataContainer> _cells;
+        boost::container::vector<DataContainer> _grids;
+
+        boost::container::vector<DataContainer>& cells();
+        boost::container::vector<DataContainer>& grids();
+    #endif
 
         SceneManager* _sceneManager;
 
-        /* Containers */
-        public:Transformable& addContainer(TransformableContainer*);
-        bool removeContainer(TransformableContainer*);
-        void clearContainer();
-        const boost::container::vector<TransformableContainer*>& container() const { return _parentsContainer; }
+    #ifdef USE_OCTREE
         void setLowestCommonParent(TransformableContainer*);
         TransformableContainer* lowestCommonParent() const;
+    #endif
 
     protected:
         BoundingVolume _volume;
 
+    #ifdef USE_OCTREE
         Transformable(SceneManager* scene) : _sceneManager(scene), _lowestCommonParent(nullptr) {}
+    #else
+        Transformable(SceneManager* scene) : _sceneManager(scene) {}
+    #endif
+
         virtual ~Transformable();
+        void deleteFromSceneManager();
     };
 
 
     /** Inline implementation */
-    inline void Transformable::lock() const { _mutex.lock(); }
-    inline void Transformable::unlock() const { _mutex.unlock(); }
 
     inline const BoundingVolume& Transformable::volume() const { return _volume; }
     inline const vec3& Transformable::volumeCenter() const { return _volume.sphere.center(); }
     inline SceneManager* Transformable::sceneManager() const { return _sceneManager; }
 
+#ifdef USE_OCTREE
     inline Transformable& Transformable::addContainer(TransformableContainer* container)
     {
         if(container)
@@ -85,13 +106,19 @@ namespace scene
     }
 
     inline void Transformable::clearContainer()
-    { _parentsContainer.clear(); }
+    {
+        _parentsContainer.clear();
+    }
 
     inline void Transformable::setLowestCommonParent(TransformableContainer* c)
     { _lowestCommonParent = c; }
 
     inline TransformableContainer* Transformable::lowestCommonParent() const
     { return _lowestCommonParent; }
+#else
+    inline boost::container::vector<Transformable::DataContainer>& Transformable::cells() { return _cells; }
+    inline boost::container::vector<Transformable::DataContainer>& Transformable::grids() { return _grids; }
+#endif
 
 }
 }

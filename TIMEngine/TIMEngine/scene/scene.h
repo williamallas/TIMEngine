@@ -7,6 +7,6 @@
 #include "SceneManager.h"
 #include "Transformable.h"
 #include "OctreeNode.h"
-#include "ArraySceneContainer.h"
+#include "SceneGrid.h"
 
 #endif // SCENE_H_INCLUDED
