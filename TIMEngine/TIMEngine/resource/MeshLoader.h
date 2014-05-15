@@ -3,6 +3,7 @@
 
 #include "core/core.h"
 #include "renderer/renderer.h"
+#include <fstream>
 
 #include "MemoryLoggerOn.h"
 namespace tim
@@ -15,7 +16,12 @@ namespace resource
     {
     public:
         static renderer::MeshBuffers* importObj(const std::string&, bool);
-        static renderer::MeshBuffers* createMeshBuffers(const float*, size_t, const unsigned int*, size_t, renderer::VertexFormat);
+        static renderer::MeshBuffers* createMeshBuffers(const float*, size_t, const uint*, size_t, renderer::VertexFormat);
+
+        static renderer::MeshBuffers* importMeshTim(const std::string&);
+        static void exportTim(renderer::MeshBuffers*, const std::string&);
+
+        static renderer::MeshBuffers* genGrid(const vec2&, uint, float virtualZ=0);
 
     private:
         MeshLoader();
@@ -42,7 +48,28 @@ namespace resource
         static bool loadObjData(const std::string&, ObjBuffer&);
         static size_t computeObjVertexMap(ObjBuffer&, renderer::IndexBuffer*, boost::container::map<renderer::VNC_Vertex, size_t>&);
         static uivec3 parseObjIndex(const std::string&, bool&, int);
+
+        static void writeTim(std::ostream&, renderer::MeshBuffers*);
+        static renderer::MeshBuffers* readMeshTim(std::istream&);
+
+        template<class T>
+        static void write(std::ostream&, const T&);
+
+        template<class T>
+        static void read(std::istream&, T&);
     };
+
+    template<class T>
+    void MeshLoader::write(std::ostream& stream, const T& data)
+    {
+        stream.write(reinterpret_cast<const char*>(&data), sizeof(data));
+    }
+
+    template<class T>
+    void MeshLoader::read(std::istream& stream, T& data)
+    {
+        stream.read(reinterpret_cast<char*>(&data), sizeof(data));
+    }
 
 }
 }

@@ -35,6 +35,7 @@ namespace resource
         }
 
         virtual unsigned char* loadImage(const std::string&, ImageFormat&) const = 0;
+        virtual unsigned char* loadImageArray(const boost::container::vector<std::string>&, ImageFormat&) const = 0;
 
         static unsigned char* toGLFormat(unsigned char*, unsigned char*, const ImageFormat&);
 

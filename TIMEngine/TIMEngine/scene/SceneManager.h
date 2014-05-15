@@ -25,8 +25,7 @@ namespace scene
         SceneManager();
         virtual ~SceneManager();
 
-        template<class Factory>
-        Transformable* addTransformable(Factory&);
+        Transformable* addTransformable(Transformable*);
 
         void move(Transformable*);
         bool removeTransformable(Transformable*);
@@ -45,6 +44,15 @@ namespace scene
         void take(T&, size_t depthLimit=0xFFFFFFFF);
 
         template<class T>
+        void takeContainer(T&, size_t depthLimit=0xFFFFFFFF);
+
+        template<class T>
+        void takeInContainer(T&, size_t depthLimit=0xFFFFFFFF);
+
+        template<class T>
+        void takeOutContainer(T&, size_t depthLimit=0xFFFFFFFF);
+
+        template<class T>
         void take_brute(T&);
 
     private:
@@ -56,6 +64,8 @@ namespace scene
 #else
             SubScene(const vec3& center, SceneManager* scene) : tree(center, scene) {}
             SceneGrid tree;
+            size_t framesEmpty=0;
+            bool wasNotEmpty=false;
 #endif
 
             boost::container::map<ivec3, SubScene*> neighbors;
@@ -77,6 +87,7 @@ namespace scene
         SubScene* subScene(const ivec3&);
         Option<SubScene*> existSubScene(const ivec3&) const;
         void insertInNeighbors(SubScene*, const ivec3&, Transformable*);
+        void removeSubScene(SubScene* ss);
 
         bool removeTransformable(Transformable*, bool);
 
@@ -94,13 +105,12 @@ namespace scene
         return ivec3(round(divPos.x()), round(divPos.y()), round(divPos.z()));
     }
 
-    template<class Factory>
-    Transformable* SceneManager::addTransformable(Factory& factory)
+    inline Transformable* SceneManager::addTransformable(Transformable* t)
     {
-        Transformable* obj = factory(this);
-        addCreatedTransformable(obj);
-        return obj;
+        addCreatedTransformable(t);
+        return t;
     }
+
 #ifdef USE_OCTREE
     inline bool SceneManager::removeTransformable(Transformable* obj)
     {
@@ -136,6 +146,20 @@ namespace scene
 #else
     inline int SceneManager::flush()
     {
+        for(auto it=_subScene.begin() ; it!=_subScene.end() ;)
+        {
+            if(it->second->tree.empty() && (it->second->framesEmpty > 100 || it->second->wasNotEmpty))
+            {
+                removeSubScene(it->second);
+                _subScene.erase(it++);
+            }
+            else if(it->second->tree.empty())
+            {
+                it->second->framesEmpty++;
+                ++it;
+            }
+            else ++it;
+        }
         return 0;
     }
 
@@ -158,8 +182,61 @@ namespace scene
     }
 
     template<class T>
+    void SceneManager::takeContainer(T& taker, size_t depthLimit)
+    {
+        ivec3 index = subSceneIndex(taker.center());
+        SubScene* scene = subScene(index);
+
+        scene->tree.takeGrid(taker, depthLimit);
+
+        if(taker.colliding(scene->tree.box()) == INTERSECT)
+        {
+            for(auto& neighbor : scene->neighbors)
+            {
+                neighbor.second->tree.takeGrid(taker, depthLimit);
+            }
+        }
+    }
+
+    template<class T>
+    void SceneManager::takeInContainer(T& taker, size_t depthLimit)
+    {
+        ivec3 index = subSceneIndex(taker.center());
+        SubScene* scene = subScene(index);
+
+        scene->tree.takeInGrid(taker, depthLimit);
+
+        if(taker.colliding(scene->tree.box()) == INTERSECT)
+        {
+            for(auto& neighbor : scene->neighbors)
+            {
+                neighbor.second->tree.takeInGrid(taker, depthLimit);
+            }
+        }
+    }
+
+    template<class T>
+    void SceneManager::takeOutContainer(T& taker, size_t depthLimit)
+    {
+        /*ivec3 index = subSceneIndex(taker.center());
+        SubScene* scene = subScene(index);
+
+        scene->tree.takeOutGrid(taker, depthLimit);
+
+        for(auto& neighbor : scene->neighbors)
+        {
+            neighbor.second->tree.takeOutGrid(taker, depthLimit);
+        }*/
+        for(auto sub : _subScene)
+        {
+            sub.second->tree.takeOutGrid(taker, depthLimit);
+        }
+    }
+
+    template<class T>
     void SceneManager::take_brute(T& taker)
     {
+
     #ifndef USE_OCTREE
         ivec3 index = subSceneIndex(taker.center());
         SubScene* scene = subScene(index);

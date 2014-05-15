@@ -77,14 +77,14 @@ inline bool StringUtils::toBool() const
 
 inline StringUtils & StringUtils::toLower()
 {
-    for(size_t i=0; i < _str.size(); i++)
+    for(size_t i=0; i < _str.size(); ++i)
         _str[i]=tolower(_str[i]);
     return *this;
 }
 
 inline StringUtils & StringUtils::toUpper()
 {
-    for(size_t i=0; i < _str.size(); i++)
+    for(size_t i=0; i < _str.size(); ++i)
         _str[i]=toupper(_str[i]);
     return *this;
 }

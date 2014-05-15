@@ -14,6 +14,7 @@ Shader::Shader()
 
 Shader::~Shader()
 {
+    openGL.unbindShader(_id);
     glDeleteProgram(_id);
 }
 
@@ -94,22 +95,31 @@ void Shader::loadEngineUniform()
     openGL.bindShader(_id);
 
     bool findOne=false;
-    for(int i=0 ; i<MAX_TEXTURE_UNIT ; i++)
+    for(int i=0 ; i<MAX_TEXTURE_UNIT ; ++i)
     {
         _uniformTextureId[i] = glGetUniformLocation(_id, (std::string("texture")+StringUtils(i).str()).c_str());
         findOne |= (_uniformTextureId[i]>=0);
         if(_uniformTextureId[i] >= 0)
             glUniform1i(_uniformTextureId[i], i);
+
+        _uniformTextureScale[i] = glGetUniformLocation(_id, (std::string("textureScale")+StringUtils(i).str()).c_str());
     }
 
     if(!findOne)
     {
-        for(int i=0 ; i<MAX_TEXTURE_UNIT ; i++)
+        for(int i=0 ; i<MAX_TEXTURE_UNIT ; ++i)
         {
             _uniformTextureId[i] = glGetUniformLocation(_id, (std::string("texture[")+StringUtils(i).str()+"]").c_str());
             if(_uniformTextureId[i] >= 0)
                 glUniform1i(_uniformTextureId[i], i);
+
+            _uniformTextureScale[i] = glGetUniformLocation(_id, (std::string("textureScale[")+StringUtils(i).str()+"]").c_str());
         }
+    }
+
+    for(size_t i=0 ; i<16 ; i++)
+    {
+        _uniformUserData[i] = glGetUniformLocation(_id, (std::string("userData[")+StringUtils(i).str()+"]").c_str());
     }
 }
 

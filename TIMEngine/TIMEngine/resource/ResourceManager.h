@@ -22,10 +22,12 @@ namespace resource
         virtual ~ResourceManager();
 
         std::string printUsedGpuMemory() const;
+        ThreadPool* threadPool() const;
 
         void addMesh(const std::string&, renderer::MeshBuffers*);
         renderer::MeshBuffers* getMesh(const std::string&);
         renderer::MeshBuffers* async_getMesh(const std::string&);
+        bool remove(renderer::MeshBuffers*);
 
         bool loadXmlDataInformation(const std::string&, const std::string& group="");
 
@@ -35,13 +37,25 @@ namespace resource
         renderer::Shader* getShader(const std::string&) const;
 
         renderer::Texture* getTexture(const std::string&);
+        bool remove(renderer::Texture*);
+
+        bool async_uploadData(renderer::Texture*,
+                              const renderer::Texture::Parameter&,
+                              ubyte*,
+                              const TextureLoader::ImageFormat&);
 
         renderer::Material* getMaterial(const std::string&);
         renderer::Material* async_getMaterial(const std::string&);
         const MaterialModel* materialModel(const std::string&) const;
+        bool remove(renderer::Material*);
+
+        renderer::Material* addMaterial(renderer::Material*, const std::string&);
 
         renderer::MaterialPass* getMaterialPass(const std::string&);
         renderer::MaterialPass* async_getMaterialPass(const std::string&);
+        bool remove(const renderer::MaterialPass*);
+
+        bool remove(renderer::ResourceInterface*);
 
         void flush(float time);
 
@@ -81,6 +95,8 @@ namespace resource
         void parseMaterialPass(TiXmlElement*, MaterialPassModel&);
         void parseOptionalMaterial(TiXmlElement*, MaterialModel&);
     };
+
+    inline ThreadPool* ResourceManager::threadPool() const { return _pool; }
 
     inline const MeshManager::MeshContext& ResourceManager::meshDataContext(const std::string& name) const
     {
@@ -135,15 +151,15 @@ namespace resource
         std::string tmp;
         Vector<float, N> res;
         size_t i=0;
-        for(size_t index=0 ; index<N ; index++)
+        for(size_t index=0 ; index<N ; ++index)
         {
             while(i<str.size() && str[i] != ',' && str[i] != ' ')
             {
                 tmp += str[i];
-                i++;
+                ++i;
             }
 
-            i++;
+            ++i;
             res[index] = StringUtils(tmp).toFloat();
             tmp.clear();
         }
@@ -156,15 +172,15 @@ namespace resource
     {
         Vector<std::string, N> res;
         size_t i=0;
-        for(size_t index=0 ; index<N ; index++)
+        for(size_t index=0 ; index<N ; ++index)
         {
             while(i<str.size() && str[i] != ',' && str[i] != ' ')
             {
                 res[index] += str[i];
-                i++;
+                ++i;
             }
 
-            i++;
+            ++i;
         }
 
         return res;

@@ -19,7 +19,9 @@ namespace resource
         struct TextureModel
         {
             renderer::Texture::Parameter parameter;
+            renderer::Texture::Type type;
             std::string data;
+            vec2 scale;
         };
 
         TextureManager(TextureLoader*);
@@ -31,6 +33,14 @@ namespace resource
 
         renderer::Texture* getTexture(const std::string&);
         renderer::Texture* async_getTexture(const std::string&, ThreadPool&);
+
+        bool async_uploadData(ThreadPool&,
+                              renderer::Texture*,
+                              const renderer::Texture::Parameter&,
+                              ubyte*,
+                              const TextureLoader::ImageFormat&);
+
+        bool remove(renderer::Texture*);
 
         void flush(ThreadPool&);
 

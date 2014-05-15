@@ -3,6 +3,8 @@
 
 #include "core.h"
 
+#define VISIBLE_STATE_SIZE 1
+
 #include "MemoryLoggerOn.h"
 namespace tim
 {
@@ -16,6 +18,7 @@ namespace scene
     protected:
         T _container;
         Box _box;
+        bool _visibleState[VISIBLE_STATE_SIZE]={false};
 
     public:
         SceneContainer() {};
@@ -23,6 +26,9 @@ namespace scene
 
         const T& container() const { return _container; }
         const Box& box() const { return _box; }
+
+        bool visibleState(size_t index=0) const { return _visibleState[index]; }
+        void setVisibleState(bool b, size_t index=0) { _visibleState[index]=b; }
 
     };
 }

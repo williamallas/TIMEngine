@@ -15,8 +15,22 @@ Material::Material()
 
 Material::~Material()
 {
+    if(_counterData)
+    {
+        if(_mesh)
+            _mesh->decrementRef();
+
+        for(size_t i=0 ; i<_nbTexture ; i++)
+        {
+            if(_textures[i])
+                _textures[i]->decrementRef();
+        }
+    }
+
     delete[] _textures;
+    delete[] _userData;
     delete _optional;
+    delete _counterData;
 }
 
 void Material::beginModif()
@@ -44,6 +58,7 @@ bool Material::operator<(const Material& m) const
 
     TESTb(_alwaysFirst, m._alwaysFirst);
     TESTb(m._alwaysLast, _alwaysLast);
+    TEST(_id, m._id);
 
     TESTb(m._blend, _blend);
     if(_blend)
@@ -87,12 +102,20 @@ bool Material::operator<(const Material& m) const
     TEST(_mesh, m._mesh);
     TEST(_shader, m._shader);
 
-    for(size_t i=0 ; i<std::min(_nbTexture, m._nbTexture) ; i++)
+    for(size_t i=0 ; i<std::min(_nbTexture, m._nbTexture) ; ++i)
     {
         if(_textures[i]<m._textures[i]) return true;
         else if(_textures[i]>m._textures[i]) return false;
     }
     TEST(m._nbTexture, _nbTexture);
+
+    for(size_t i=0 ; i<std::min(_userDataSize, m._userDataSize) ; ++i)
+    {
+        if(_userData[i]<m._userData[i]) return true;
+        else if(_userData[i]!=m._userData[i]) return false;
+    }
+    TEST(m._userDataSize, _userDataSize);
+
     TEST(_inManagerId, m._inManagerId);
 
     return false;
@@ -100,7 +123,7 @@ bool Material::operator<(const Material& m) const
 
 bool Material::operator==(const Material& m) const
 {
-    if(_alwaysFirst != m._alwaysFirst || _alwaysLast != m._alwaysLast)
+    if(_alwaysFirst != m._alwaysFirst || _alwaysLast != m._alwaysLast || _id != m._id)
         return false;
 
     if(_blend && m._blend)
@@ -163,13 +186,24 @@ bool Material::operator==(const Material& m) const
 
     if(_nbTexture==m._nbTexture)
     {
-        for(size_t i=0 ; i<_nbTexture ; i++)
+        for(size_t i=0 ; i<_nbTexture ; ++i)
         {
             if(_textures[i] != m._textures[i])
                 return false;
         }
     }
     else return false;
+
+    if(_userDataSize==m._userDataSize)
+    {
+        for(size_t i=0 ; i<_userDataSize ; ++i)
+        {
+            if(_userData[i] != m._userData[i])
+                return false;
+        }
+    }
+    else return false;
+
     return true;
 }
 
@@ -184,8 +218,11 @@ Material& Material::operator=(const Material& m)
     _alphaTest=m._alphaTest; _alphaFunc=m._alphaFunc;
     _alphaThreshold=m._alphaThreshold; _writeColor=m._writeColor;
     _material=m._material; _exponent=m._exponent;
-    _color=m._color; _mesh=m._mesh; _shader=m._shader;
+    _color=m._color; _shader=m._shader;
     _nbTexture=m._nbTexture;
+    _id=m._id;
+
+   setMesh(m._mesh);
 
     if(m._optional)
     {
@@ -195,8 +232,17 @@ Material& Material::operator=(const Material& m)
         _optional->opcode=m._optional->opcode;
     }
     setNbTexture(m._nbTexture);
-    for(size_t i=0 ; i<_nbTexture ; i++)
-        _textures[i] = m._textures[i];
+    for(size_t i=0 ; i<_nbTexture ; ++i)
+    {
+        setTexture(m._textures[i], i);
+    }
+
+    setUserDataSize(m._userDataSize);
+    for(size_t i=0 ; i<_userDataSize ; ++i)
+    {
+        setUserData(m._userData[i], i);
+    }
+
     endModif();
 }
 
@@ -231,6 +277,7 @@ std::string Material::str(const std::string& sep) const
     s+=sep+"material="+StringUtils(_material).str();
     s+=sep+"exponent="+StringUtils(_exponent).str();
     s+=sep+"color="+StringUtils(_color).str();
+    s+=sep+"id="+StringUtils(_id).str();
     if(_optional)
     {
         s+=sep+"scissor="+StringUtils(_optional->scissor).str();
@@ -270,8 +317,34 @@ const Material& Material::random()
 #define MANAGE_OUT if(_manager){if(_inManager)_manager->push(this);}
 
 Material& Material::setShader(Shader* x) { MANAGE_IN _shader=x; MANAGE_OUT return *this; }
-Material& Material::setMesh(MeshBuffers* x) { MANAGE_IN _mesh=x; MANAGE_OUT return *this; }
-Material& Material::setTexture(Texture* x, size_t s) { MANAGE_IN if(s<_nbTexture) _textures[s]=x; MANAGE_OUT return *this; }
+Material& Material::setMesh(MeshBuffers* x)
+{
+    MANAGE_IN
+    if(_mesh && _counterData)
+        _mesh->decrementRef();
+    _mesh=x;
+    if(_mesh && _counterData)
+        _mesh->incrementRef();
+    MANAGE_OUT
+    return *this;
+}
+Material& Material::setTexture(Texture* x, size_t s)
+{
+    MANAGE_IN
+
+    if(s<_nbTexture)
+    {
+        if(_textures[s] && _counterData)
+            _textures[s]->decrementRef();
+
+        _textures[s]=x;
+        if(_textures[s] && _counterData)
+            _textures[s]->incrementRef();
+    }
+
+    MANAGE_OUT
+    return *this;
+}
 
 Material& Material::setNbTexture(size_t x)
 {
@@ -285,13 +358,45 @@ Material& Material::setNbTexture(size_t x)
     {
         Texture** tmp=_textures;
         _textures=new Texture*[x];
-        for(size_t i=0 ; i<std::min(_nbTexture, x) ; i++)
+        for(size_t i=0 ; i<std::min(_nbTexture, x) ; ++i)
             _textures[i] = tmp[i];
-        //delete[] tmp;
+        delete[] tmp;
     }
     _nbTexture=x;
      MANAGE_OUT
      return *this;
+}
+
+Material& Material::setUserDataSize(size_t x)
+{
+    MANAGE_IN
+    if(!x)
+    {
+        delete[] _userData;
+        _userData=nullptr;
+    }
+    else
+    {
+        vec4* tmp=_userData;
+        _userData=new vec4[x];
+        for(size_t i=0 ; i<std::min(_userDataSize, x) ; ++i)
+            _userData[i] = tmp[i];
+        delete[] tmp;
+    }
+    _userDataSize=x;
+    MANAGE_OUT
+    return *this;
+}
+
+Material& Material::setUserData(const vec4& v, size_t x)
+{
+    MANAGE_IN
+    if(x < _userDataSize)
+    {
+        _userData[x] = v;
+    }
+    MANAGE_OUT
+    return *this;
 }
 
 Material& Material::setColor(const vec4& x) { MANAGE_IN _color=x; MANAGE_OUT return *this; }
@@ -317,7 +422,7 @@ Material& Material::setScissorCoord(const uivec2& x) { MANAGE_IN if(_optional)_o
 Material& Material::setScissorSize(const uivec2& x) { MANAGE_IN if(_optional)_optional->scissorSize=x; MANAGE_OUT return *this; }
 Material& Material::setLogicColor(bool x) { MANAGE_IN if(_optional)_optional->logicColor=x; MANAGE_OUT return *this; }
 Material& Material::setOpcode(GLenum x) { MANAGE_IN if(_optional)_optional->opcode=x; MANAGE_OUT return *this; }
-
+Material& Material::setId(int id) { MANAGE_IN _id=id; MANAGE_OUT return *this; }
 
 bool Material::bind() const
 {
@@ -368,19 +473,59 @@ bool Material::bind() const
         _shader->setUniform(_material, _shader->engineUniformId(Shader::EngineUniform::MATERIAL));
         _shader->setUniform(_exponent, _shader->engineUniformId(Shader::EngineUniform::EXPONENT));
 
+        for(size_t i=0 ; i<std::min(_userDataSize,16u) ; ++i)
+        {
+            _shader->setUniform(_userData[i], _shader->engineUseDataId(i));
+        }
+
+        for(size_t i=0 ; i<_nbTexture ; ++i)
+        {
+            if(_textures[i])
+                _shader->setUniform(_textures[i]->scale(), _shader->engineTextureScaleId(i));
+        }
+
         if(_mesh)
         {
             if(_mesh->vertexBuffer())
             {
                 openGL.bindArrayBuffer(_mesh->vertexBuffer()->id());
-                if(_shader->engineAttribId(Shader::EngineAttrib::VERTEX) >= 0)
-                    _mesh->vertexBuffer()->bindVertexAttrib(_shader->engineAttribId(Shader::EngineAttrib::VERTEX), VertexBuffer::vertexEngineAttrib(_mesh->vertexBuffer()->format(), VertexBuffer::VertexAttrib::VERTEX));
-                if(_shader->engineAttribId(Shader::EngineAttrib::NORMAL) >= 0)
-                    _mesh->vertexBuffer()->bindVertexAttrib(_shader->engineAttribId(Shader::EngineAttrib::NORMAL), VertexBuffer::vertexEngineAttrib(_mesh->vertexBuffer()->format(), VertexBuffer::VertexAttrib::NORMAL));
-                if(_shader->engineAttribId(Shader::EngineAttrib::TEXCOORD) >= 0)
-                    _mesh->vertexBuffer()->bindVertexAttrib(_shader->engineAttribId(Shader::EngineAttrib::TEXCOORD), VertexBuffer::vertexEngineAttrib(_mesh->vertexBuffer()->format(), VertexBuffer::VertexAttrib::TEXCOORD));
-                if(_shader->engineAttribId(Shader::EngineAttrib::TANGENT) >= 0)
-                    _mesh->vertexBuffer()->bindVertexAttrib(_shader->engineAttribId(Shader::EngineAttrib::TANGENT), VertexBuffer::vertexEngineAttrib(_mesh->vertexBuffer()->format(), VertexBuffer::VertexAttrib::TANGENT));
+                glBindBuffer(GL_ARRAY_BUFFER,_mesh->vertexBuffer()->id() );
+
+                bool used[VertexBuffer::MAX_VAO_ATTRIB] = {false};
+
+                int id = _shader->engineAttribId(Shader::EngineAttrib::VERTEX);
+                if(id >= 0)
+                {
+                    _mesh->vertexBuffer()->bindVertexAttrib(id, VertexBuffer::vertexEngineAttrib(_mesh->vertexBuffer()->format(), VertexBuffer::VertexAttrib::VERTEX));
+                    used[id] = true;
+                }
+
+                id = _shader->engineAttribId(Shader::EngineAttrib::NORMAL);
+                if(id >= 0)
+                {
+                    _mesh->vertexBuffer()->bindVertexAttrib(id, VertexBuffer::vertexEngineAttrib(_mesh->vertexBuffer()->format(), VertexBuffer::VertexAttrib::NORMAL));
+                    used[id] = true;
+                }
+
+                id = _shader->engineAttribId(Shader::EngineAttrib::TEXCOORD);
+                if(id >= 0)
+                {
+                    _mesh->vertexBuffer()->bindVertexAttrib(id, VertexBuffer::vertexEngineAttrib(_mesh->vertexBuffer()->format(), VertexBuffer::VertexAttrib::TEXCOORD));
+                    used[id] = true;
+                }
+
+                id = _shader->engineAttribId(Shader::EngineAttrib::TANGENT);
+                if(id >= 0)
+                {
+                    _mesh->vertexBuffer()->bindVertexAttrib(id, VertexBuffer::vertexEngineAttrib(_mesh->vertexBuffer()->format(), VertexBuffer::VertexAttrib::TANGENT));
+                    used[id] = true;
+                }
+
+                for(uint i=0 ; i<VertexBuffer::MAX_VAO_ATTRIB ; ++i)
+                {
+                    if(!used[i])
+                        _mesh->vertexBuffer()->bindVertexAttrib(i, {0,0});
+                }
             }
             else return false;
 
@@ -390,7 +535,7 @@ bool Material::bind() const
         }
         else return false;
 
-        for(size_t i=0 ; i<_nbTexture ; i++)
+        for(size_t i=0 ; i<_nbTexture ; ++i)
         {
             if(_textures[i])
             {

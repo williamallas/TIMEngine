@@ -7,6 +7,8 @@ namespace tim
 namespace renderer
 {
 
+VertexBuffer::VertexAttrib VertexBuffer::attribBinding[MAX_VAO_ATTRIB];
+
 VertexBuffer::VertexBuffer()
 {
 
@@ -64,7 +66,11 @@ void VertexBuffer::flushOnGpu(size_t begin, size_t size) const
 
 void VertexBuffer::freeBuffer()
 {
+    openGL.unbindArrayBuffer(_bufferId);
+
     glDeleteBuffers(1, &_bufferId);
+
+    _bufferId = 0;
     _size = 0;
     _formatSize = 0;
 
@@ -80,9 +86,9 @@ void VertexBuffer::freeData()
 void VertexBuffer::bindVertexAttrib(uint position, const VertexAttrib& attrib)
 {
     #define BUFFER_OFFSET(a) ((char*)NULL + (a))
-    if(_attribBinding[position] != attrib)
+    if(attribBinding[position] != attrib)
     {
-        _attribBinding[position] = attrib;
+        attribBinding[position] = attrib;
         if(!attrib.nbComponent)
             glDisableVertexAttribArray(position);
         else
@@ -97,7 +103,7 @@ void VertexBuffer::computeBoundingVolume()
 {
     vec2 x(INFINITY, -INFINITY),y(INFINITY, -INFINITY),z(INFINITY, -INFINITY);
 
-    for(size_t i=0 ; i<_size ; i++)
+    for(size_t i=0 ; i<_size ; ++i)
     {
         vec3 v={_data[i*_formatSize], _data[i*_formatSize+1], _data[i*_formatSize+2]};
         x.set(std::min(v.x(), x.x()), 0);
@@ -115,7 +121,7 @@ void VertexBuffer::computeBoundingVolume()
     vec3 center = _aabb.center();
 
     float rad2=0;
-    for(size_t i=0 ; i<_size ; i++)
+    for(size_t i=0 ; i<_size ; ++i)
     {
         vec3 v={_data[i*_formatSize], _data[i*_formatSize+1], _data[i*_formatSize+2]};
         rad2 = std::max(rad2, (v-center).length2());

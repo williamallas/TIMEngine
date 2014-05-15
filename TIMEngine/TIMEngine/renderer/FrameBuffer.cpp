@@ -13,7 +13,7 @@ FrameBuffer::FrameBuffer(const boost::container::vector<Texture*>& colorBuf, Tex
     _depthBuffer.tex=depthBuf;
 
     _colorBuffers.resize(colorBuf.size());
-    for(size_t i=0 ; i<colorBuf.size() ; i++)
+    for(size_t i=0 ; i<colorBuf.size() ; ++i)
     {
         _colorBuffers[i].attachment=0;
         _colorBuffers[i].tex=colorBuf[i];
@@ -24,11 +24,13 @@ FrameBuffer::FrameBuffer(const boost::container::vector<Texture*>& colorBuf, Tex
 
 FrameBuffer::~FrameBuffer()
 {
+    openGL.unbindFrameBuffer(_id);
     if(_id!=0)
         glDeleteFramebuffers(1, &_id);
+    _id=0;
 
     delete _depthBuffer.tex;
-    for(size_t i=0 ; i<_colorBuffers.size() ; i++)
+    for(size_t i=0 ; i<_colorBuffers.size() ; ++i)
     {
         delete _colorBuffers[i].tex;
     }
@@ -62,7 +64,7 @@ void FrameBuffer::build()
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, _depthBuffer.attachment, _depthBuffer.tex->id(), 0); break;
         }
     }
-    for(size_t i=0 ; i<_colorBuffers.size() ; i++)
+    for(size_t i=0 ; i<_colorBuffers.size() ; ++i)
     {
         if(_colorBuffers[i].tex)
         {
@@ -105,7 +107,7 @@ void FrameBuffer::bind(uint flags)
     {
         GLenum * buffers = new GLenum[_colorBuffers.size()];
 
-        for(size_t i = 0; i < _colorBuffers.size(); i++)
+        for(size_t i = 0; i < _colorBuffers.size(); ++i)
             buffers[i] = GL_COLOR_ATTACHMENT0 + i;
 
         glDrawBuffers(_colorBuffers.size(), buffers);

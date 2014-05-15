@@ -1,7 +1,7 @@
 #ifndef SCENEMANAGERI_H
 #define SCENEMANAGERI_H
 
-#include <boost/timer/timer.hpp>
+#include <boost\timer\timer.hpp>
 #include "scene\SceneManager.h"
 #include "scene\Frustum.h"
 #include "renderer\MaterialRenderer.h"
@@ -14,6 +14,8 @@ namespace tim
     using namespace core;
 namespace interface
 {
+    class TerrainSystem;
+
     class SceneManager
     {
     public:
@@ -22,7 +24,10 @@ namespace interface
         virtual ~SceneManager();
 
         SceneObject* addSceneObject(const mat4& mat=mat4::IDENTITY());
-        RenderableObject* addRenderableObject(const mat4& mat=mat4::IDENTITY());
+        RenderableObject* addRenderableObject(const mat4& mat=mat4::IDENTITY(), bool withObb=false);
+        void addTerrainSystem(TerrainSystem*);
+
+        bool remove(SceneObject*);
 
         void notifyStreamMeshRenderable(RenderableObject*);
 
@@ -35,6 +40,10 @@ namespace interface
 
         template <class T>
         static size_t drawObjects(const T&, size_t, renderer::MaterialRenderer*);
+
+        template <class T>
+        static size_t drawObjects(const T& nodeList, boost::container::vector<renderer::MaterialInstance*>& instList,
+                           size_t, renderer::MaterialRenderer*);
 
         /* take method */
         void frustumTest(const Camera&, boost::container::vector<SceneObject*>&,
@@ -49,11 +58,21 @@ namespace interface
                         SceneObject::ObjectTypeMask, bool bruteforce,
                         size_t depthLimit=0xFFFFFFFF, size_t indexMask=0);
 
+        void sphereVisibleTest(const Sphere&, boost::container::vector<scene::TransformableContainer*>&,
+                               size_t visibleCanal=0);
+
+        void sphereOutTest(const Sphere&, boost::container::vector<scene::TransformableContainer*>&,
+                           size_t visibleCanal=0);
+
+        void sphereInTest(const Sphere&, boost::container::vector<scene::TransformableContainer*>&,
+                           size_t visibleCanal=0);
+
         std::string str() const;
 
     private:
         scene::SceneManager _scene;
         boost::container::vector<RenderableObject*> _renderableEmptyMesh;
+        boost::container::vector<TerrainSystem*> _terrains;
 
         static void filterDrawList(boost::container::vector<SceneObject*>&, size_t);
 
@@ -71,13 +90,20 @@ namespace interface
     }
 
     template <class T>
+    size_t SceneManager::drawObjects(const T& nodeList, boost::container::vector<renderer::MaterialInstance*>& instList,
+                                     size_t pass, renderer::MaterialRenderer* render)
+    {
+        toRenderableMaterialList(instList, nodeList, pass, render);
+        return render->render(instList.begin(), instList.end(), pass);
+    }
+
+    template <class T>
     void SceneManager::toRenderableMaterialList(boost::container::vector<renderer::MaterialInstance*>& mlist,
                                                 const T& obj, size_t pass, renderer::MaterialRenderer* render)
     {
-        mlist.reserve(obj.size());
         for(SceneObject* e:obj)
         {
-            for(size_t i=0 ; i<reinterpret_cast<RenderableObject*>(e)->nbElement() ; i++)
+            for(size_t i=0 ; i<reinterpret_cast<RenderableObject*>(e)->nbElement() ; ++i)
                 mlist.push_back(&(reinterpret_cast<RenderableObject*>(e)->_mesh[i]));
         }
 
@@ -94,9 +120,9 @@ namespace interface
     {
         auto tmp = boost::move(_renderableEmptyMesh);
 
-        for(size_t i=0 ; i<tmp.size() ; i++)
+        for(size_t i=0 ; i<tmp.size() ; ++i)
         {
-            if(tmp[i]->isComplete())
+            if(tmp[i]->isStreaming())
                 tmp[i]->computeVolume();
             else _renderableEmptyMesh.push_back(tmp[i]);
         }

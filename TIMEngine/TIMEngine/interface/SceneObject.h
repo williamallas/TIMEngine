@@ -36,12 +36,16 @@ namespace interface
         void setMatrix(const mat4&);
         void setMatrixNoScale(const mat4&);
 
+        template <class T> void setDeleteCallback(const T& callback);
+
         void remove();
 
     private:
         mat4 _matrix;
         scene::BoundingVolume _initialVolume;
         bool _filterUtils[8]={false};
+
+        boost::function<void(SceneObject*)> _removeCallback;
 
     protected:
         ObjectType _type;
@@ -53,6 +57,11 @@ namespace interface
     inline const mat4& SceneObject::matrix() const { return _matrix; }
     inline const scene::BoundingVolume& SceneObject::initialVolume() const { return _initialVolume; }
     inline SceneObject::ObjectType SceneObject::type() const { return _type; }
+
+    template <class T> void SceneObject::setDeleteCallback(const T& callback)
+    {
+        _removeCallback=callback;
+    }
 
 }
 }

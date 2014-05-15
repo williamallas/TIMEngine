@@ -66,7 +66,7 @@ Intersection Frustum::collide(const Sphere& s) const
     Intersection result = INSIDE;
 	float distance;
 
-	for(size_t i=0; i<_plans.size(); i++)
+	for(size_t i=0; i<_plans.size(); ++i)
 	{
 		distance = _plans[i].distance(s.center());
 
@@ -82,7 +82,7 @@ Intersection Frustum::collide(const Sphere& s) const
 Intersection Frustum::collide(const Box& b) const
 {
     Intersection result = INSIDE;
-	for(int i=0; i < _plans.size(); i++)
+	for(int i=0; i < _plans.size(); ++i)
     {
 		if(_plans[i].distance(getBoxVertexP(b, _plans[i].plan().down<1>())) < 0)
 			return OUTSIDE;
@@ -95,7 +95,7 @@ Intersection Frustum::collide(const Box& b) const
 
 bool Frustum::collide(const vec3& p) const
 {
-    for(int i=0; i < _plans.size(); i++)
+    for(int i=0; i < _plans.size(); ++i)
     {
 		if(_plans[i].distance(p) < 0)
 			return false;
@@ -106,7 +106,7 @@ bool Frustum::collide(const vec3& p) const
 vec3 Frustum::getBoxVertexP(const Box& b, const vec3& n) const
 {
     vec3 result;
-    for(size_t i=0 ; i<3 ; i++)
+    for(size_t i=0 ; i<3 ; ++i)
     {
         if (n[i] > 0) result.set(b.box()[i][1], i);
         else result.set(b.box()[i][0], i);
@@ -118,7 +118,7 @@ vec3 Frustum::getBoxVertexP(const Box& b, const vec3& n) const
 vec3 Frustum::getBoxVertexN(const Box& b, const vec3& n) const
 {
     vec3 result;
-    for(size_t i=0 ; i<3 ; i++)
+    for(size_t i=0 ; i<3 ; ++i)
     {
         if (n[i] < 0) result.set(b.box()[i][1], i);
         else result.set(b.box()[i][0], i);

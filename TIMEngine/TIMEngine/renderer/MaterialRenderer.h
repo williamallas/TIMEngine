@@ -92,7 +92,7 @@ namespace renderer
                 if(lastMat && lastMat->bind())
                 {
                     drawPool(indexPool, lastMat);
-                    nbDraw++;
+                    ++nbDraw;
                 }
                 indexPool=0;
             }
@@ -103,14 +103,14 @@ namespace renderer
                 _matrixPool[indexPool] = mat4::IDENTITY();
 
             lastMat=m;
-            indexPool++;
-            itBegin++;
+            ++indexPool;
+            ++itBegin;
         }
 
         if(lastMat && lastMat->bind())
         {
             drawPool(indexPool, lastMat);
-            nbDraw++;
+            ++nbDraw;
         }
         return nbDraw;
     }

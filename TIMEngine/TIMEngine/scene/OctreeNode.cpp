@@ -25,7 +25,7 @@ OctreeNode::OctreeNode(const vec3& center, SceneManager* scene) : TransformableC
     _isLeaf = true;
     _depth = 0;
 
-    for(size_t i=0 ; i<8 ; i++)
+    for(size_t i=0 ; i<8 ; ++i)
         _child[i] = nullptr;
 }
 
@@ -40,7 +40,7 @@ OctreeNode::OctreeNode(const vec3& center, SceneManager* scene, OctreeNode* pare
     _isLeaf = true;
     _depth = depth;
 
-    for(size_t i=0 ; i<8 ; i++)
+    for(size_t i=0 ; i<8 ; ++i)
         _child[i] = nullptr;
 }
 
@@ -51,12 +51,12 @@ OctreeNode::~OctreeNode()
 
     if(_isLeaf)
     {
-        for(size_t i=0 ; i<_container.size() ; i++)
+        for(size_t i=0 ; i<_container.size() ; ++i)
             _container[i]->removeContainer(this);
     }
     else
     {
-        for(size_t i=0 ; i<8 ; i++)
+        for(size_t i=0 ; i<8 ; ++i)
         {
             delete _child[i];
         }
@@ -64,7 +64,7 @@ OctreeNode::~OctreeNode()
 
     if(_depth == 0)
     {
-        for(size_t i=0 ; i<_container.size() ; i++)
+        for(size_t i=0 ; i<_container.size() ; ++i)
         {
             _container[i]->setLowestCommonParent(nullptr);
             _container[i]->_sceneManager=nullptr;
@@ -105,7 +105,7 @@ Intersection OctreeNode::insert(Transformable* obj, bool fromToNode)
     }
     else
     {
-        for(size_t i=0 ; i<8 ; i++)
+        for(size_t i=0 ; i<8 ; ++i)
         {
             if(_child[i]->insert(obj, fromToNode) == INSIDE)
             {
@@ -137,7 +137,7 @@ bool OctreeNode::internRemoveTo(Transformable* obj, OctreeNode* to)
 bool OctreeNode::internInsertInChild(Transformable* obj)
 {
     bool findInside=false;
-    for(size_t i=0 ; i<8 ; i++)
+    for(size_t i=0 ; i<8 ; ++i)
     {
         if(_child[i]->insert(obj, false) == INSIDE)
         {
@@ -203,7 +203,7 @@ void OctreeNode::flushDepth()
         if(_container.size() >= MAX_ELEMENT && _depth < MAX_DEPTH)
         {
             toNode();
-            for(size_t i=0 ; i<8 ; i++)
+            for(size_t i=0 ; i<8 ; ++i)
                 _child[i]->flushDepth();
         }
     }
@@ -226,19 +226,19 @@ void OctreeNode::toNode()
         _child[index] = new OctreeNode({half.x()*i+center.x(),
                                         half.y()*j+center.y(),
                                         half.z()*k+center.z()}, _sceneManager, this, _root, _depth+1);
-        index++;
+        ++index;
     }
 
     _isLeaf = false;
 
-    for(size_t j=0 ; j<_container.size() ; j++)
+    for(size_t j=0 ; j<_container.size() ; ++j)
     {
         _container[j]->removeContainer(this);
     }
 
-    for(size_t j=0 ; j<_container.size() ; j++)
+    for(size_t j=0 ; j<_container.size() ; ++j)
     {
-        for(size_t i=0 ; i<8 ; i++)
+        for(size_t i=0 ; i<8 ; ++i)
         {
             if(_child[i]->insert(_container[j], true) == INSIDE)
                 break;
@@ -248,7 +248,7 @@ void OctreeNode::toNode()
 
 void OctreeNode::toLeaf()
 {
-    for(size_t i=0 ; i<8 ; i++)
+    for(size_t i=0 ; i<8 ; ++i)
     {
         delete _child[i];
         _child[i] = nullptr;
@@ -256,7 +256,7 @@ void OctreeNode::toLeaf()
 
     _isLeaf = true;
 
-    for(size_t j=0 ; j<_container.size() ; j++)
+    for(size_t j=0 ; j<_container.size() ; ++j)
     {
         _container[j]->addContainer(this);
 
@@ -280,21 +280,21 @@ std::string OctreeNode::str() const
 
 void OctreeNode::str(std::string& s) const
 {
-    for(size_t i=0 ; i<_depth ; i++)
+    for(size_t i=0 ; i<_depth ; ++i)
         s += "  ";
     s += "->"+StringUtils(_depth).str()+":";
     s+="\n";
 
     if(_isLeaf)
-    for(size_t i=0 ; i<_container.size() ; i++)
+    for(size_t i=0 ; i<_container.size() ; ++i)
     {
-        for(size_t j=0 ; j<_depth ; j++)
+        for(size_t j=0 ; j<_depth ; ++j)
             s += "  ";
         s+="   "+StringUtils(_container[i]).str()+"\n";
     }
 
     if(!_isLeaf)
-        for(size_t i=0 ; i<8 ; i++)
+        for(size_t i=0 ; i<8 ;++i)
             _child[i]->str(s);
 }
 

@@ -13,8 +13,6 @@ namespace tim
     using namespace core;
 namespace renderer
 {
-    typedef GLuint uint;
-
     static const size_t MAX_TEXTURE_UNIT=32;
 
     class GLState : public Singleton<GLState>
@@ -32,13 +30,22 @@ namespace renderer
         static void flush();
         static void finish();
 
-        void bindArrayBuffer(uint);
-        void bindPixelBufferUnpack(uint);
-        void bindElementArrayBuffer(GLenum);
-        void bindShader(uint);
-        void bindFrameBuffer(uint);
-        void bindTexture(uint, GLenum, uint);
-        void bindTextureSampler(uint, uint);
+        bool bindArrayBuffer(uint);
+        bool bindPixelBufferUnpack(uint);
+        bool bindElementArrayBuffer(uint);
+        bool bindShader(uint);
+        bool bindFrameBuffer(uint);
+        bool bindTexture(uint, GLenum, uint);
+        bool bindTextureSampler(uint, uint);
+
+        void unbindArrayBuffer(uint);
+        void unbindPixelBufferUnpack(uint);
+        void unbindElementArrayBuffer(uint);
+        void unbindShader(uint);
+        void unbindFrameBuffer(uint);
+        void unbindTexture(uint, GLenum, uint);
+        void unbindTextureSampler(uint, uint);
+
         void setViewPort(const uivec2&, const uivec2&);
         void drawBuffer(uint);
         void readBuffer(uint);
@@ -166,43 +173,51 @@ namespace renderer
         return _hardwardProperties[hp];
     }
 
-    inline void GLState::bindArrayBuffer(uint id)
+    inline bool GLState::bindArrayBuffer(uint id)
     {
         if(_glStates[ARRAY_BUFFER] != id)
         {
             _glStates[ARRAY_BUFFER] = id;
             glBindBuffer(GL_ARRAY_BUFFER, id);
+            return true;
         }
+        return false;
     }
 
-    inline void GLState::bindElementArrayBuffer(uint id)
+    inline bool GLState::bindElementArrayBuffer(uint id)
     {
         if(_glStates[ELEMENT_ARRAY_BUFFER] != id)
         {
             _glStates[ELEMENT_ARRAY_BUFFER] = id;
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id);
+            return true;
         }
+        return false;
     }
 
-    inline void GLState::bindPixelBufferUnpack(uint id)
+    inline bool GLState::bindPixelBufferUnpack(uint id)
     {
         if(_glStates[PIXEL_BUFFER_UNPACK] != id)
         {
             _glStates[PIXEL_BUFFER_UNPACK] = id;
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, id);
+            return true;
         }
+        return false;
     }
 
-    inline void GLState::bindShader(uint id)
+    inline bool GLState::bindShader(uint id)
     {
         if(_glStates[SHADER] != id)
         {
             _glStates[SHADER] = id;
             glUseProgram(id);
+            return true;
         }
+        return false;
     }
 
-    inline void GLState::bindTexture(uint id, GLenum type, uint unit)
+    inline bool GLState::bindTexture(uint id, GLenum type, uint unit)
     {
         if(_textureUnit != unit)
         {
@@ -215,24 +230,100 @@ namespace renderer
             _enabledTexture[unit] = id;
             _typeEnabledTexture[unit] = type;
             glBindTexture(type, id);
+            return true;
         }
+        return false;
     }
 
-    inline void  GLState::bindTextureSampler(uint unit, uint sampler)
+    inline bool  GLState::bindTextureSampler(uint unit, uint sampler)
     {
         if(_samplerTexture[unit] != sampler)
         {
             _samplerTexture[unit]=sampler;
             glBindSampler(unit, sampler);
+            return true;
         }
+        return false;
     }
 
-    inline void GLState::bindFrameBuffer(uint id)
+    inline bool GLState::bindFrameBuffer(uint id)
     {
         if(_glStates[FRAME_BUFFER] != id)
         {
             _glStates[FRAME_BUFFER]=id;
             glBindFramebuffer(GL_FRAMEBUFFER, id);
+            return true;
+        }
+        return false;
+    }
+
+    inline void GLState::unbindArrayBuffer(uint id)
+    {
+        if(_glStates[ARRAY_BUFFER] == id)
+        {
+            _glStates[ARRAY_BUFFER] = 0;
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+        }
+    }
+
+    inline void GLState::unbindPixelBufferUnpack(uint id)
+    {
+        if(_glStates[PIXEL_BUFFER_UNPACK] == id)
+        {
+            _glStates[PIXEL_BUFFER_UNPACK] = 0;
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+        }
+    }
+
+    inline void GLState::unbindElementArrayBuffer(uint id)
+    {
+        if(_glStates[ELEMENT_ARRAY_BUFFER] == id)
+        {
+            _glStates[ELEMENT_ARRAY_BUFFER] = 0;
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        }
+    }
+
+    inline void GLState::unbindShader(uint id)
+    {
+        if(_glStates[SHADER] == id)
+        {
+            _glStates[SHADER] = 0;
+            glUseProgram(0);
+        }
+    }
+
+    inline void GLState::unbindFrameBuffer(uint id)
+    {
+        if(_glStates[FRAME_BUFFER] == id)
+        {
+            _glStates[FRAME_BUFFER] = 0;
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+    }
+
+    inline void GLState::unbindTexture(uint id, GLenum type, uint unit)
+    {
+        if(_textureUnit != unit)
+        {
+            _textureUnit=unit;
+            glActiveTexture(GL_TEXTURE0+_textureUnit);
+        }
+
+        if(_enabledTexture[unit] == id)
+        {
+            _enabledTexture[unit] = 0;
+            _typeEnabledTexture[unit] = type;
+            glBindTexture(type, 0);
+        }
+    }
+
+    inline void GLState::unbindTextureSampler(uint unit, uint sampler)
+    {
+        if(_samplerTexture[unit] == sampler)
+        {
+            _samplerTexture[unit]=0;
+            glBindSampler(unit, 0);
         }
     }
 

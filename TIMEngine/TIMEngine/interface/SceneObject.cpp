@@ -18,7 +18,10 @@ SceneObject::SceneObject(const mat4& m, scene::SceneManager* sm) : Transformable
 
 SceneObject::~SceneObject()
 {
-
+    if(_removeCallback)
+    {
+        _removeCallback(this);
+    }
 }
 
 void SceneObject::setInitialVolume(const scene::BoundingVolume& v)

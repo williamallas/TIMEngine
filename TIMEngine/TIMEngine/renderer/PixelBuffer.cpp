@@ -14,6 +14,7 @@ PixelBuffer::PixelBuffer()
 
 PixelBuffer::~PixelBuffer()
 {
+    openGL.unbindPixelBufferUnpack(_id);
     glDeleteBuffers(1, &_id);
 }
 

@@ -20,7 +20,7 @@ SceneGrid::SceneGrid(const vec3& box, SceneManager* scene)
     _grid=new Cell[NB_CELLS];
     _scene = scene;
 
-    for(size_t i=0 ; i<NB_CELLS ; i++)
+    for(size_t i=0 ; i<NB_CELLS ; ++i)
     {
         uivec3 index = mapIndex(i);
         vec3 findex=vec3(index.x(), index.y(), index.z())*vec3(CELL_SIZE_X, CELL_SIZE_Y, CELL_SIZE_Z);
@@ -55,7 +55,7 @@ Intersection SceneGrid::insert(Transformable* obj)
 
 void SceneGrid::inject(Transformable* obj)
 {
-    if(obj->volume().sphere.radius() > 3*std::min(std::min(CELL_SIZE_X, CELL_SIZE_Y), CELL_SIZE_Z))
+    if(obj->volume().sphere.radius() > std::min(std::min(CELL_SIZE_X, CELL_SIZE_Y), CELL_SIZE_Z))
         insertBig(obj);
     else insertSmall(obj);
 }
@@ -64,7 +64,7 @@ void SceneGrid::remove(size_t index)
 {
     std::swap(_allObject[index], _allObject[_allObject.size()-1]);
 
-    for(size_t i=0 ; i<_allObject[index]->grids().size() ; i++)
+    for(size_t i=0 ; i<_allObject[index]->grids().size() ; ++i)
     {
         if(_allObject[index]->grids()[i].container == this)
         {
@@ -79,7 +79,7 @@ void SceneGrid::insertBig(Transformable* obj)
 {
     if(obj->volume().obb)
     {
-        for(size_t i=0 ; i<NB_CELLS ; i++)
+        for(size_t i=0 ; i<NB_CELLS ; ++i)
         {
             if(_grid[i].box().collide(obj->volume().box()) != OUTSIDE)
                 _grid[i].addTransformable(obj);
@@ -87,7 +87,7 @@ void SceneGrid::insertBig(Transformable* obj)
     }
     else
     {
-        for(size_t i=0 ; i<NB_CELLS ; i++)
+        for(size_t i=0 ; i<NB_CELLS ; ++i)
         {
             if(_grid[i].box().collide(obj->volume().sphere) != OUTSIDE)
                 _grid[i].addTransformable(obj);
@@ -100,10 +100,10 @@ void SceneGrid::insertSmall(Transformable* obj)
 {
     vec3 center = obj->volumeCenter();
 
-    for(size_t i=0 ; i<3 ; i++)
+    for(size_t i=0 ; i<3 ; ++i)
     {
-        center[i] = std::max(_box.min()[i], center[i]);
-        center[i] = std::min(_box.max()[i], center[i]);
+        center[i] = std::max(_box.min()[i]+0.01f, center[i]);
+        center[i] = std::min(_box.max()[i]-0.01f, center[i]);
     }
 
     uivec3 index = mapIndex(center);
@@ -130,9 +130,9 @@ void SceneGrid::insertSmall(Transformable* obj)
             break;
         }
 
-        for(int i=-1 ; i<=1 ; i++)
-            for(int j=-1 ; j<=1 ; j++)
-                for(int k=-1 ; k<=1 ; k++)
+        for(int i=-1 ; i<=1 ; ++i)
+            for(int j=-1 ; j<=1 ; ++j)
+                for(int k=-1 ; k<=1 ; ++k)
         {
             if(i==0&&j==0&&k==0)
                 continue;
@@ -163,6 +163,7 @@ void SceneGrid::insertSmall(Transformable* obj)
         indexCell = mapIndex(uivec3(static_cast<size_t>(i_index.x()),
                                     static_cast<size_t>(i_index.y()),
                                     static_cast<size_t>(i_index.z())));
+
         inter = _grid[indexCell].box().collide(obj->volume().sphere);
 
         switch(inter)
@@ -176,9 +177,9 @@ void SceneGrid::insertSmall(Transformable* obj)
             break;
         }
 
-        for(int i=-1 ; i<=1 ; i++)
-            for(int j=-1 ; j<=1 ; j++)
-                for(int k=-1 ; k<=1 ; k++)
+        for(int i=-1 ; i<=1 ; ++i)
+            for(int j=-1 ; j<=1 ; ++j)
+                for(int k=-1 ; k<=1 ; ++k)
         {
             if(i==0&&j==0&&k==0)
                 continue;
@@ -209,7 +210,7 @@ void SceneGrid::insertSmall(Transformable* obj)
 std::string SceneGrid::str() const
 {
     std::string res=std::string("SceneGrid:")+_box.str()+"\n";
-    for(size_t i=0 ; i<NB_CELL_X*NB_CELL_Y*NB_CELL_Z ; i++)
+    for(size_t i=0 ; i<NB_CELL_X*NB_CELL_Y*NB_CELL_Z ; ++i)
     {
         if(_grid[i].container().size())
             res+=mapIndex(i).str()+":"+StringUtils(_grid[i].container().size()).str()+"\n";

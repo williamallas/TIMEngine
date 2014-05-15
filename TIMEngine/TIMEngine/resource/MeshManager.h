@@ -40,6 +40,8 @@ namespace resource
 
         renderer::MeshBuffers* get(const std::string&) const;
 
+        bool remove(renderer::MeshBuffers*);
+
     private:
         boost::container::map<std::string, boost::shared_ptr<renderer::MeshBuffers>> _mesh;
         size_t _gpuMemory=0;

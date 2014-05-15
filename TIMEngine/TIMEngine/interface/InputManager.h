@@ -34,7 +34,7 @@ namespace interface
 
         InputManager()
         {
-            for(size_t i=0 ; i<5 ; i++)
+            for(size_t i=0 ; i<5 ; ++i)
                 _mouseState[i]=NO_STATE;
 
             _quit = false;

@@ -1,4 +1,5 @@
 #include "SceneManager.h"
+#include "TerrainSystem.h"
 
 #include "MemoryLoggerOn.h"
 namespace tim
@@ -19,34 +20,40 @@ SceneManager::~SceneManager()
 
 SceneObject* SceneManager::addSceneObject(const mat4& mat)
 {
-    class Factory
-    {
-    public:
-        const mat4 *matrix=nullptr;
-        SceneObject* operator()(scene::SceneManager* scene) { return new SceneObject(*matrix, scene); }
-    };
-    static Factory facto;
-    facto.matrix=&mat;
-
-    auto tmp=reinterpret_cast<SceneObject*>(_scene.addTransformable(facto));
+    SceneObject* tmp=reinterpret_cast<SceneObject*>(_scene.addTransformable(new SceneObject(mat, &_scene)));
     tmp->_manager=this;
     return tmp;
 }
 
-RenderableObject* SceneManager::addRenderableObject(const mat4& mat)
+RenderableObject* SceneManager::addRenderableObject(const mat4& mat, bool withObb)
 {
-    class Factory
-    {
-    public:
-        const mat4 *matrix=nullptr;
-        RenderableObject* operator()(scene::SceneManager* scene) { return new RenderableObject(*matrix, scene); }
-    };
-    static Factory facto;
-    facto.matrix=&mat;
-
-    auto tmp = reinterpret_cast<RenderableObject*>(_scene.addTransformable(facto));
+    RenderableObject* tmp = new RenderableObject(mat, &_scene);
     tmp->_manager=this;
-    return tmp;
+    if(withObb)
+        tmp->computeVolume(true);
+
+    return reinterpret_cast<RenderableObject*>(_scene.addTransformable(tmp));
+}
+
+void SceneManager::addTerrainSystem(TerrainSystem* tSys)
+{
+    _terrains.push_back(tSys);
+}
+
+bool SceneManager::remove(SceneObject* o)
+{
+    if(this == o->_manager)
+    {
+        if(o->type() == SceneObject::ObjectType::RENDERABLE)
+        {
+            _renderableEmptyMesh.erase(std::remove_if(_renderableEmptyMesh.begin(), _renderableEmptyMesh.end(),
+                                                      [&](RenderableObject* obj){return obj==reinterpret_cast<RenderableObject*>(o);}),
+                                        _renderableEmptyMesh.end());
+        }
+
+        return _scene.removeTransformable(o);
+    }
+    return false;
 }
 
 void SceneManager::frustumTest(const Camera& camera, boost::container::vector<SceneObject*>& obj,
@@ -78,10 +85,24 @@ void SceneManager::frustumTest(const Camera& camera, boost::container::vector<Sc
 
         void take(scene::Transformable* t)
         {
-            if(frustum.collide(reinterpret_cast<SceneObject*>(t)->volume().sphere) != OUTSIDE)
+            if(reinterpret_cast<SceneObject*>(t)->volume().obb && reinterpret_cast<SceneObject*>(t)->volume().box().isAligned())
             {
-                reinterpret_cast<SceneObject*>(t)->_filterUtils[indexMask]=true;
-                obj->push_back(reinterpret_cast<SceneObject*>(t));
+                if(frustum.collide(reinterpret_cast<SceneObject*>(t)->volume().box().box()+
+                                   reinterpret_cast<SceneObject*>(t)->matrix().translation()) != OUTSIDE)
+                {
+                    reinterpret_cast<SceneObject*>(t)->_filterUtils[indexMask]=true;
+                    obj->push_back(reinterpret_cast<SceneObject*>(t));
+                    return;
+                }
+            }
+            else
+            {
+                if(frustum.collide(reinterpret_cast<SceneObject*>(t)->volume().sphere) != OUTSIDE)
+                {
+                    reinterpret_cast<SceneObject*>(t)->_filterUtils[indexMask]=true;
+                    obj->push_back(reinterpret_cast<SceneObject*>(t));
+                    return;
+                }
             }
         }
 
@@ -96,15 +117,13 @@ void SceneManager::frustumTest(const Camera& camera, boost::container::vector<Sc
     f.mask = mask;
     f.obj = &obj;
     f.indexMask=indexMask;
-    f.c = (camera.pos + (camera.dir-camera.pos).normalized()*(camera.clipDist.y()-camera.clipDist.x()))*0.5;
+    f.c = camera.pos+(camera.dir-camera.pos).normalized()*(camera.clipDist.y()-camera.clipDist.x())*0.5;
     f.frustum.buildCameraFrustum(camera.fov, camera.ratio, camera.clipDist,
                                  camera.pos, camera.dir, camera.up);
-
     if(bruteforce)
         _scene.take_brute(f);
     else
         _scene.take(f, depthLimit);
-
     filterDrawList(obj,indexMask);
 }
 
@@ -193,10 +212,30 @@ void SceneManager::frustumTest(const scene::Frustum& frustum, const vec3& center
 
         void take(scene::Transformable* t)
         {
-            if(frustum.collide(reinterpret_cast<SceneObject*>(t)->volume().sphere) != OUTSIDE)
+            if(!reinterpret_cast<SceneObject*>(t)->volume().obb)
             {
-                reinterpret_cast<SceneObject*>(t)->_filterUtils[indexMask]=true;
-                obj->push_back(reinterpret_cast<SceneObject*>(t));
+                if(frustum.collide(reinterpret_cast<SceneObject*>(t)->volume().sphere) != OUTSIDE)
+                {
+                    reinterpret_cast<SceneObject*>(t)->_filterUtils[indexMask]=true;
+                    obj->push_back(reinterpret_cast<SceneObject*>(t));
+                }
+            }
+            else if(!reinterpret_cast<SceneObject*>(t)->volume().box().isAligned())
+            {
+                if(frustum.collide(reinterpret_cast<SceneObject*>(t)->volume().sphere) != OUTSIDE)
+                {
+                    reinterpret_cast<SceneObject*>(t)->_filterUtils[indexMask]=true;
+                    obj->push_back(reinterpret_cast<SceneObject*>(t));
+                }
+            }
+            else
+            {
+                if(frustum.collide(reinterpret_cast<SceneObject*>(t)->volume().box().box()+
+                                   reinterpret_cast<SceneObject*>(t)->volume().box().matrix().translation()) != OUTSIDE)
+                {
+                    reinterpret_cast<SceneObject*>(t)->_filterUtils[indexMask]=true;
+                    obj->push_back(reinterpret_cast<SceneObject*>(t));
+                }
             }
         }
 
@@ -222,6 +261,151 @@ void SceneManager::frustumTest(const scene::Frustum& frustum, const vec3& center
     filterDrawList(obj,indexMask);
 }
 
+void SceneManager::sphereVisibleTest(const Sphere& sphere, boost::container::vector<scene::TransformableContainer*>& container, size_t visibleCanal)
+{
+    class SphereTest
+    {
+    public:
+        SphereTest() {}
+
+        boost::container::vector<scene::TransformableContainer*>* obj;
+        Sphere sphere;
+        size_t canal;
+
+        inline Intersection colliding(const Box& b) const
+        { return b.collide(sphere); }
+
+        inline Intersection collide(const Box& b) const
+        { return sphere.collide(b); }
+
+        inline void takeInside(scene::TransformableContainer* c)
+        {
+            if(!c->visibleState(canal))
+            {
+                c->setVisibleState(true, canal);
+                obj->push_back(c);
+            }
+        }
+
+        inline void takeOutside(scene::TransformableContainer* c)
+        {
+            if(c->visibleState(canal))
+            {
+                c->setVisibleState(false, canal);
+                obj->push_back(c);
+            }
+        }
+
+        inline void takeIntersect(scene::TransformableContainer* c)
+        {
+            if(sphere.outside(c->box()))
+                takeOutside(c);
+            else
+                takeInside(c);
+        }
+
+        const vec3& center() const { return sphere.center(); }
+
+    };
+
+    SphereTest f;
+    f.canal=visibleCanal;
+    f.obj = &container;
+    f.sphere=sphere;
+    _scene.takeContainer(f,3);
+}
+
+void SceneManager::sphereOutTest(const Sphere& s, boost::container::vector<scene::TransformableContainer*>& container, size_t visibleCanal)
+{
+    class SphereTest
+    {
+    public:
+        SphereTest() {}
+
+        boost::container::vector<scene::TransformableContainer*>* obj;
+        Sphere sphere;
+        size_t canal;
+
+        inline Intersection collide(const Box& b) const
+        { return sphere.collide(b); }
+
+        inline void take(scene::TransformableContainer* c)
+        {
+            if(c->visibleState(canal))
+            {
+                c->setVisibleState(false, canal);
+                obj->push_back(c);
+            }
+        }
+
+        inline void takeIntersect(scene::TransformableContainer* c)
+        {
+            if(sphere.outside(c->box()) && c->visibleState(canal))
+            {
+                c->setVisibleState(false, canal);
+                obj->push_back(c);
+            }
+        }
+
+        const vec3& center() const { return sphere.center(); }
+    };
+
+    SphereTest f;
+    f.canal=visibleCanal;
+    f.obj = &container;
+    f.sphere=s;
+    _scene.takeOutContainer(f,3);
+
+}
+
+void SceneManager::sphereInTest(const Sphere& s, boost::container::vector<scene::TransformableContainer*>& container, size_t visibleCanal)
+{
+    class SphereTest
+    {
+    public:
+        SphereTest() {}
+
+        boost::container::vector<scene::TransformableContainer*>* obj;
+        Sphere sphere;
+        size_t canal;
+
+        inline Intersection colliding(const Box& b) const
+        { return b.collide(sphere); }
+
+        inline Intersection collide(const Box& b) const
+        { return sphere.collide(b); }
+
+        inline void take(scene::TransformableContainer* c)
+        {
+            if(!c->visibleState(canal))
+            {
+                c->setVisibleState(true, canal);
+                obj->push_back(c);
+            }
+        }
+
+        inline void takeIntersect(scene::TransformableContainer* c)
+        {
+            if(sphere.outside(c->box()))
+                return;
+
+            if(!c->visibleState(canal))
+            {
+                c->setVisibleState(true, canal);
+                obj->push_back(c);
+            }
+        }
+
+        const vec3& center() const { return sphere.center(); }
+    };
+
+    SphereTest f;
+    f.canal=visibleCanal;
+    f.obj = &container;
+    f.sphere=s;
+    _scene.takeInContainer(f,3);
+}
+
 void SceneManager::filterDrawList(boost::container::vector<SceneObject*>& l, size_t filterIndex)
 {
     for(SceneObject* obj : l)
@@ -239,7 +423,7 @@ void SceneManager::sortMaterialList(boost::container::vector<renderer::MaterialI
     std::sort(drawList.begin(), drawList.end(), Compar());
 
     int firstBlend=-1, lastBlend=-1;
-    for(int i=(size_t)drawList.size()-1 ; i>=0 ; i--)
+    for(int i=(size_t)drawList.size()-1 ; i>=0 ; --i)
     {
         if(drawList[i]->material(pass))
         {

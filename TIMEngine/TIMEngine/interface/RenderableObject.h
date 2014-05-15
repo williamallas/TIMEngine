@@ -25,7 +25,7 @@ namespace interface
 
     private:
         boost::container::vector<renderer::MaterialInstance> _mesh;
-        bool isComplete() const;
+        bool isStreaming() const;
 
     protected:
         RenderableObject(const mat4&, scene::SceneManager*);
@@ -34,7 +34,6 @@ namespace interface
 
     inline renderer::MaterialPass* RenderableObject::element(size_t i) const { if(i<_mesh.size()) return _mesh[i].materialPass(); else return nullptr; }
     inline size_t RenderableObject::nbElement() const { return _mesh.size(); }
-    inline void RenderableObject::clearElement() { _mesh.clear(); }
 }
 }
 #include "MemoryLoggerOff.h"

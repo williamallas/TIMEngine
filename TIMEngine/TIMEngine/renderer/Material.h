@@ -12,13 +12,15 @@ namespace tim
 {
     using namespace core;
     namespace resource{ class MaterialManager; }
+    namespace resource { class ResourceSceneManager; }
 
 namespace renderer
 {
-
     class Material
     {
         friend class resource::MaterialManager;
+        friend class resource::ResourceSceneManager;
+        friend class MaterialPass;
 
     public:
         static const Material& random();
@@ -72,8 +74,9 @@ namespace renderer
         };
 
         Material();
-        virtual ~Material();
         Material(const Material&);
+
+        virtual ~Material();
 
         size_t index() const;
         void beginModif();
@@ -108,6 +111,9 @@ namespace renderer
         const Vector2<BlendFunc>& blendFunc() const;
         bool alwaysFirst() const;
         bool alwaysLast() const;
+        int id() const;
+        const vec4& userData(size_t) const;
+        size_t userDataSize() const;
         core::Option<OptionalMaterial> optionalMaterial() const;
 
         Material& setShader(Shader*);
@@ -137,6 +143,9 @@ namespace renderer
         Material& setScissorSize(const uivec2&);
         Material& setLogicColor(bool);
         Material& setOpcode(GLenum);
+        Material& setId(int);
+        Material& setUserDataSize(size_t);
+        Material& setUserData(const vec4&, size_t);
 
         /* out */
         std::string str(const std::string& sep = "\n") const;
@@ -147,11 +156,6 @@ namespace renderer
         static uint toGLBlendEquation(BlendEquation);
 
     private:
-        size_t _index=0;
-        resource::MaterialManager* _manager=nullptr;
-        bool _inManager=false;
-        size_t _inManagerId=0;
-
         /* Material */
         Shader* _shader = nullptr;
         MeshBuffers* _mesh = nullptr;
@@ -179,6 +183,23 @@ namespace renderer
         OptionalMaterial* _optional = nullptr;
         bool _alwaysFirst=false;
         bool _alwaysLast=false;
+        int _id=0;
+
+        uint _userDataSize=0;
+        vec4* _userData=nullptr;
+
+        /* other */
+        size_t _index=0;
+        resource::MaterialManager* _manager=nullptr;
+        bool _inManager=false;
+        size_t _inManagerId=0;
+
+        struct ResourceCounterData
+        {
+            void* manager=nullptr;
+            int counter=-1;
+        };
+        ResourceCounterData* _counterData = nullptr;
 
     };
 
@@ -209,6 +230,10 @@ namespace renderer
     inline const Vector2<Material::BlendFunc>& Material::blendFunc() const { return _blendFunc; }
     inline bool Material::alwaysFirst() const { return _alwaysFirst; }
     inline bool Material::alwaysLast() const { return _alwaysLast; }
+    inline int Material::id() const { return _id; }
+    inline const vec4& Material::userData(size_t i) const { return _userData[i]; }
+    inline size_t Material::userDataSize() const { return _userDataSize; }
+
     inline core::Option<Material::OptionalMaterial> Material::optionalMaterial() const
     { if(_optional) return Option<Material::OptionalMaterial>(*_optional); else return Option<Material::OptionalMaterial>(); }
 

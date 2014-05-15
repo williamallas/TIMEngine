@@ -12,7 +12,7 @@ unsigned char* TextureLoader::toGLFormat(unsigned char* ptr, unsigned char* out_
     if(!out_ptr)
         out_ptr = new unsigned char[format.size.x()*format.size.y()*format.nbComponent];
 
-    for(size_t i=0 ; i<format.size.y() ; i++)
+    for(size_t i=0 ; i<format.size.y() ; ++i)
     {
         memcpy(out_ptr + i*format.size.x()*format.nbComponent,
                ptr + (format.size.y()-i-1)*format.size.x()*format.nbComponent,

@@ -93,7 +93,7 @@ void MemoryLogger::printLeak() const
     err("\nLeaks detected:\n");
 
     boost::lock_guard<boost::recursive_mutex> guard(_mutex);
-    for(auto it = _allocatedMemorys.begin() ; it != _allocatedMemorys.end() ; it++)
+    for(auto it = _allocatedMemorys.begin() ; it != _allocatedMemorys.end() ; ++it)
     {
         err("Leak of size " + StringUtils(it->second.size).str() + " in " +
             it->second.file + " : " + StringUtils(it->second.line).str() + " (" +

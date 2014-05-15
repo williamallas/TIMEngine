@@ -5,6 +5,7 @@
 #include "core/core.h"
 
 #include "GLState.h"
+#include "ResourceInterface.h"
 
 #include "MemoryLoggerOn.h"
 namespace tim
@@ -14,12 +15,12 @@ namespace renderer
 {
 
     class TextureSampler;
-    class Texture
+    class Texture : public ResourceInterface
     {
     public:
         enum Type
         {
-            TEXTURE_2D,
+            TEXTURE_2D=0,
             TEXTURE_3D,
             TEXTURE_CUBE,
             TEXTURE_ARRAY,
@@ -53,6 +54,9 @@ namespace renderer
         static Texture* genTexture2D(const uivec2&, const float*, uint nbComponent, const Parameter&);
         static Texture* genTexture2D(const uivec2&, const unsigned char*, uint nbComponent, const Parameter&);
 
+        static Texture* genTextureArray2D(const uivec3&, const float*, uint nbComponent, const Parameter&);
+        static Texture* genTextureArray2D(const uivec3&, const unsigned char*, uint nbComponent, const Parameter&);
+
         Texture();
         virtual ~Texture();
 
@@ -68,14 +72,16 @@ namespace renderer
         uivec3 size() const;
         TextureSampler* sampler() const;
         size_t bytePerPixel() const;
+        const vec2& scale() const;
 
         void setParameter(const Parameter&) const;
         void setSampler(TextureSampler*);
-
+        void setScale(const vec2&);
         void swap(Texture&);
 
     private:
         uint _id=0;
+        vec2 _scale={1,1};
         size_t _pixelByteSize;
         uivec3 _size;
         Type _type=TEXTURE_2D;
@@ -83,6 +89,7 @@ namespace renderer
         TextureSampler* _parameter = nullptr;
 
         static Texture* genTexture2D(uint dataType, const uivec2&, const void*, uint nbComponent, const Parameter&);
+        static Texture* genTextureArray2D(uint dataType, const uivec3&, const void*, uint nbComponent, const Parameter&);
 
     };
 
@@ -93,6 +100,9 @@ namespace renderer
     inline uivec3 Texture::size() const { return _size; }
     inline TextureSampler* Texture::sampler() const { return _parameter; }
     inline size_t Texture::bytePerPixel() const { return _pixelByteSize; }
+    inline const vec2& Texture::scale() const { return _scale; }
+
+    inline void Texture::setScale(const vec2& scale) { _scale = scale; }
 
     inline void Texture::swap(Texture& tex)
     {

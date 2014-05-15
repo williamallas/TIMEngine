@@ -30,8 +30,8 @@ namespace resource
 
         void setSource(const std::string&);
 
-        Option<renderer::uint> compile(std::initializer_list<std::string>);
-        Option<renderer::uint> compile(const boost::container::set<std::string>&);
+        Option<core::uint> compile(std::initializer_list<std::string>);
+        Option<core::uint> compile(const boost::container::set<std::string>&);
 
         const std::string& error() const;
 
@@ -39,9 +39,9 @@ namespace resource
         ShaderType _shaderType;
         std::string _source;
         std::string _lastError;
-        boost::container::map<boost::container::set<std::string>, renderer::uint> _shader;
+        boost::container::map<boost::container::set<std::string>, core::uint> _shader;
 
-        void logError(renderer::uint);
+        void logError(core::uint);
 
     };
 

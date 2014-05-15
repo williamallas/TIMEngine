@@ -33,9 +33,9 @@ Sphere Box::toSphere() const
 bool Box::inside(const Sphere& s) const
 {
     /* Check if center is outside */
-//    for(size_t i=0 ; i<3 ; i++)
+//    for(size_t i=0 ; i<3 ; ++i)
 //        if(s.center()[i] < _box[i].x()) return false;
-//    for(size_t i=0 ; i<3 ; i++)
+//    for(size_t i=0 ; i<3 ; ++i)
 //        if(s.center()[i] > _box[i].y()) return false;
 
     vec3 a = s.center(); a-=vec3(_box[0].x(), _box[1].x(), _box[2].x());
@@ -69,6 +69,10 @@ bool Box::outside(const Sphere& s) const
 /* Obb */
 bool Box::inside(const OrientedBox& obb) const
 {
+    if(obb.isAligned())
+    {
+        return inside(obb.box()+obb.matrix().translation());
+    }
     OrientedBoxAxis axe;
     obb.computeAxis(obb.box(), obb.matrix(), axe);
 
@@ -85,6 +89,11 @@ bool Box::inside(const OrientedBox& obb) const
 
 bool Box::outside(const OrientedBox& obb) const
 {
+    if(obb.isAligned())
+    {
+        return outside(obb.box()+obb.matrix().translation());
+    }
+
     OrientedBoxAxis t_axis;
     OrientedBox::computeAxis(obb.box(), obb.matrix(), t_axis);
     if(testAABBAxis(*this, t_axis))
@@ -185,6 +194,12 @@ Intersection Box::collide(const OrientedBox& obb) const
         return OUTSIDE;
 
     return INTERSECT;
+}
+
+Box Box::operator+(const vec3& v) const
+{
+    return Box(vec3(_box[0].x(), _box[1].x(), _box[2].x())+v,
+               vec3(_box[0].y(), _box[1].y(), _box[2].y())+v);
 }
 
 

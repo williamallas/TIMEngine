@@ -111,7 +111,7 @@ namespace scene
                     taker.take(t);
             }
         }
-        else for(size_t i=0 ; i<8 ; i++)
+        else for(size_t i=0 ; i<8 ; ++i)
             _child[i]->take(taker, depthLimit);
 
         return inter;

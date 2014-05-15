@@ -22,16 +22,17 @@ Box Sphere::toBox() const
 }
 
 /* AABB */
-bool Sphere::inside(const Box&  box) const
+bool Sphere::inside(const Box& box) const
 {
     const vec3 hs = box.halfSize();
     float radius2=_radius*_radius;
+    const vec3 bcenter = box.center();
 
     for(int i=-1 ; i<=1 ; i+=2)
         for(int j=-1 ; j<=1 ; j+=2)
             for(int k=-1 ; k<=1 ; k+=2)
     {
-        if((_center - hs*vec3(i,j,k)).length2() > radius2)
+        if((_center - bcenter+hs*vec3(i,j,k)).length2() > radius2)
             return false;
     }
 

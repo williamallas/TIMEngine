@@ -35,24 +35,24 @@ void MetaShader::setSource(const std::string& str)
     _source = str;
 }
 
-Option<renderer::uint> MetaShader::compile(std::initializer_list<std::string> flags)
+Option<core::uint> MetaShader::compile(std::initializer_list<std::string> flags)
 {
     return compile(boost::container::set<std::string>(flags.begin(), flags.end()));
 }
 
-Option<renderer::uint> MetaShader::compile(const boost::container::set<std::string>& flags)
+Option<core::uint> MetaShader::compile(const boost::container::set<std::string>& flags)
 {
     auto it = _shader.find(flags);
     if(it != _shader.end())
-        return Option<renderer::uint>(it->second);
+        return Option<core::uint>(it->second);
 
     std::string finalSource="";
-    for(auto it=flags.begin() ; it != flags.end() ; it++)
+    for(auto it=flags.begin() ; it != flags.end() ; ++it)
         finalSource += "#define "+*it+"\n";
 
     finalSource += _source;
 
-    renderer::uint id = glCreateShader(GLShaderType(_shaderType));
+    core::uint id = glCreateShader(GLShaderType(_shaderType));
     const GLchar* gchar = (const GLchar*)finalSource.c_str();
     glShaderSource(id, 1, &gchar, NULL);
     glCompileShader(id);
@@ -63,20 +63,20 @@ Option<renderer::uint> MetaShader::compile(const boost::container::set<std::stri
     if(compileStatus != GL_TRUE)
     {
         _lastError="Compiling with:";
-        for(auto it=flags.begin() ; it != flags.end() ; it++)
+        for(auto it=flags.begin() ; it != flags.end() ; ++it)
             _lastError += *it +" ";
         _lastError += "\n";
         logError(id);
         glDeleteShader(id);
-        return Option<renderer::uint>();
+        return Option<core::uint>();
     }
 
     _shader[flags] = id;
 
-    return Option<renderer::uint>(id);
+    return Option<core::uint>(id);
 }
 
-void MetaShader::logError(renderer::uint shaderId)
+void MetaShader::logError(core::uint shaderId)
 {
     int logSize;
     glGetShaderiv(shaderId, GL_INFO_LOG_LENGTH, &logSize);

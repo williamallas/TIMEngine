@@ -26,6 +26,7 @@ namespace core
             const Box& box() const;
             const mat4& matrix() const;
             const mat4& inverseMatrix() const;
+            bool isAligned() const;
 
             OrientedBox& setMatrix(const mat4&);
             OrientedBox& setBox(const Box&);
@@ -39,6 +40,7 @@ namespace core
         private:
             Box _box;
             mat4 _matrix, _invMatrix;
+            bool _isAligned;
     };
 
 
@@ -46,8 +48,15 @@ namespace core
     inline const Box& OrientedBox::box() const { return _box; }
     inline const mat4& OrientedBox::matrix() const { return _matrix; }
     inline const mat4& OrientedBox::inverseMatrix() const { return _invMatrix; }
+    inline bool OrientedBox::isAligned() const { return _isAligned; }
 
-    inline OrientedBox& OrientedBox::setMatrix(const mat4& mat) { _matrix=mat; _invMatrix=mat.inverted(); return *this; }
+    inline OrientedBox& OrientedBox::setMatrix(const mat4& mat)
+    {
+        _matrix=mat;
+        _invMatrix=mat.inverted();
+        _isAligned = (mat.to<3>() == mat3::IDENTITY());
+         return *this;
+    }
     inline OrientedBox& OrientedBox::setBox(const Box& box) { _box=box; return *this; }
 
 }

@@ -25,6 +25,8 @@ namespace renderer
 
         virtual ~TextureSampler()
         {
+            for(size_t i=0 ; i<MAX_TEXTURE_UNIT ; ++i)
+                openGL.unbindTextureSampler(_id, i);
             glDeleteSamplers(1, &_id);
         }
 

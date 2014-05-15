@@ -2,6 +2,7 @@
 #define RAND_H_INCLUDED
 
 #include <boost/random/taus88.hpp>
+#include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_01.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
 #include <boost/random/uniform_real_distribution.hpp>
@@ -17,10 +18,10 @@ namespace core
     {
     public:
 
-        Rand(int seed) { _generator.seed(seed); }
+        Rand(uint seed) { _generator.seed(seed); }
         float next_f() { return frand_range(_generator); }
         size_t next_i() { return _generator(); }
-        void setSeed(int seed) { _generator.seed(seed); }
+        void setSeed(uint seed) { _generator.seed(seed); }
 
         /* Static */
         static float frand() { return frand_range(generator); }
@@ -39,10 +40,10 @@ namespace core
             return dis(generator);
         }
 
-        static void seed(int seed) { generator.seed(seed); }
+        static void seed(uint seed) { generator.seed(seed); }
 
     private:
-        boost::random::taus88 _generator;
+        boost::random::mt11213b _generator;
 
         static boost::random::taus88 generator;
         static boost::random::uniform_01<> frand_range;

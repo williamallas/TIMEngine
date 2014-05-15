@@ -56,6 +56,8 @@ namespace core
         template<class T> Intersection collide(const T&) const;
         Intersection collide(const OrientedBox&) const;
 
+        Box operator+(const vec3&) const;
+
         /* out */
         std::string str() const;
         friend std::ostream& operator<< (std::ostream& stream, const Box& t) { stream << t.str(); return stream;}
@@ -72,8 +74,8 @@ namespace core
     inline Box& Box::setX(const vec2& v) { _box[0]=v; return *this; }
     inline Box& Box::setY(const vec2& v) { _box[1]=v; return *this; }
     inline Box& Box::setZ(const vec2& v) { _box[2]=v; return *this; }
-    inline Box& Box::setMin(const vec3& v) { for(size_t i=0 ; i<3 ; i++)_box[i].x()=v[i]; return *this; }
-    inline Box& Box::setMax(const vec3& v) { for(size_t i=0 ; i<3 ; i++)_box[i].y()=v[i]; return *this; }
+    inline Box& Box::setMin(const vec3& v) { for(size_t i=0 ; i<3 ; ++i)_box[i].x()=v[i]; return *this; }
+    inline Box& Box::setMax(const vec3& v) { for(size_t i=0 ; i<3 ; ++i)_box[i].y()=v[i]; return *this; }
 
     inline vec3 Box::min() const { return vec3(_box[0].x(), _box[1].x(), _box[2].x()); }
     inline vec3 Box::max() const { return vec3(_box[0].y(), _box[1].y(), _box[2].y()); }
@@ -92,10 +94,10 @@ namespace core
     /* box */
     inline bool Box::inside(const Box& box) const
     {
-        for(size_t i=0 ; i<3 ; i++)
+        for(size_t i=0 ; i<3 ; ++i)
             if(_box[i].y() < box._box[i].y()) return false;
 
-        for(size_t i=0 ; i<3 ; i++)
+        for(size_t i=0 ; i<3 ; ++i)
             if(_box[i].x() > box._box[i].x()) return false;
 
         return true;
@@ -103,10 +105,10 @@ namespace core
 
     inline bool Box::outside(const Box& box) const
     {
-        for(size_t i=0 ; i<3 ; i++)
+        for(size_t i=0 ; i<3 ; ++i)
             if(_box[i].x() > box._box[i].y()) return true;
 
-        for(size_t i=0 ; i<3 ; i++)
+        for(size_t i=0 ; i<3 ; ++i)
             if(_box[i].y() < box._box[i].x()) return true;
 
         return false;
@@ -115,7 +117,7 @@ namespace core
     /* point */
     inline bool Box::inside(const vec3& p) const
     {
-        for(size_t i=0 ; i<3 ; i++)
+        for(size_t i=0 ; i<3 ; ++i)
             if(p[i] < _box[i].x() || p[i] > _box[i].y())
                 return false;
 

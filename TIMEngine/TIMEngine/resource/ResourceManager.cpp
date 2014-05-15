@@ -1,4 +1,5 @@
 #include "ResourceManager.h"
+#include "ResourceSceneManager.h"
 #include "resource.h"
 
 #include "MemoryLoggerOn.h"
@@ -25,6 +26,8 @@ ResourceManager::~ResourceManager()
     delete _enginePixelShader;
     delete _engineVertexShader;
     delete _engineGeometryShader;
+
+    _materialPass.clear();
 }
 
 renderer::MeshBuffers* ResourceManager::getMesh(const std::string& str)
@@ -41,9 +44,29 @@ renderer::MeshBuffers* ResourceManager::getMesh(const std::string& str)
     return mesh;
 }
 
+bool ResourceManager::remove(renderer::MeshBuffers* mesh)
+{
+    return _meshManager.remove(mesh);
+}
+
 renderer::Texture* ResourceManager::getTexture(const std::string& name)
 {
     return _textureManager.getTexture(name);
+}
+
+bool ResourceManager::remove(renderer::Texture* t)
+{
+    return _textureManager.remove(t);
+}
+
+bool ResourceManager::async_uploadData(renderer::Texture* tex,
+                      const renderer::Texture::Parameter& texParam,
+                      ubyte* data,
+                      const TextureLoader::ImageFormat& format)
+{
+    if(_pool)
+        return _textureManager.async_uploadData(*_pool, tex, texParam, data, format);
+    else return false;
 }
 
 renderer::MaterialPass* ResourceManager::getMaterialPass(const std::string& str)
@@ -59,11 +82,12 @@ renderer::MaterialPass* ResourceManager::getMaterialPass(const std::string& str)
         if(itt != _materialPassModels.end())
         {
             renderer::MaterialPass* pass = new renderer::MaterialPass;
-            for(size_t i=0 ; i<itt->second.pass.size() ; i++)
+            for(size_t i=0 ; i<itt->second.pass.size() ; ++i)
             {
                 pass->setPass(getMaterial(itt->second.pass[i]), i);
             }
             _materialPass[str] = boost::shared_ptr<renderer::MaterialPass>(pass);
+            resourceCollector.trace(pass);
             return pass;
         }
     }
@@ -83,15 +107,34 @@ renderer::MaterialPass* ResourceManager::async_getMaterialPass(const std::string
         if(itt != _materialPassModels.end())
         {
             renderer::MaterialPass* pass = new renderer::MaterialPass;
-            for(size_t i=0 ; i<itt->second.pass.size() ; i++)
+            for(size_t i=0 ; i<itt->second.pass.size() ; ++i)
             {
                 pass->setPass(async_getMaterial(itt->second.pass[i]), i);
             }
             _materialPass[str] = boost::shared_ptr<renderer::MaterialPass>(pass);
+            resourceCollector.trace(pass);
             return pass;
         }
     }
     return nullptr;
+}
+
+bool ResourceManager::remove(const renderer::MaterialPass* pass)
+{
+    for(auto it=_materialPass.begin() ; it != _materialPass.end() ; it++)
+    {
+        if(pass == (it->second).get())
+        {
+            _materialPass.erase(it);
+            return true;
+        }
+    }
+    return false;
+}
+
+renderer::Material* ResourceManager::addMaterial(renderer::Material* mat, const std::string& str)
+{
+    return _materials.add(mat, str);
 }
 
 renderer::Material* ResourceManager::getMaterial(const std::string& str)
@@ -134,13 +177,11 @@ renderer::Material* ResourceManager::getMaterial(const std::string& str)
 
             mat->setShader(getShader(model->shader));
             mat->setMesh(getMesh(model->mesh));
-
             mat->setNbTexture(model->textures.size());
-            for(size_t i=0 ; i<model->textures.size() ; i++)
+            for(size_t i=0 ; i<model->textures.size() ; ++i)
             {
                 mat->setTexture(_textureManager.getTexture(model->textures[i]), i);
             }
-
             mat = _materials.add(mat, str);
         }
     }
@@ -189,7 +230,7 @@ renderer::Material* ResourceManager::async_getMaterial(const std::string& str)
             mat->setMesh(async_getMesh(model->mesh));
 
             mat->setNbTexture(model->textures.size());
-            for(size_t i=0 ; i<model->textures.size() ; i++)
+            for(size_t i=0 ; i<model->textures.size() ; ++i)
             {
                 mat->setTexture(_textureManager.async_getTexture(model->textures[i], *_pool), i);
             }
@@ -198,6 +239,32 @@ renderer::Material* ResourceManager::async_getMaterial(const std::string& str)
         }
     }
     return mat;
+}
+
+bool ResourceManager::remove(renderer::Material* mat)
+{
+    return _materials.remove(mat);
+}
+
+bool ResourceManager::remove(renderer::ResourceInterface* res)
+{
+    {
+        renderer::Texture* tex=dynamic_cast<renderer::Texture*>(res);
+        if(tex)
+        {
+            return remove(tex);
+        }
+    }
+
+    {
+        renderer::MeshBuffers* mesh=dynamic_cast<renderer::MeshBuffers*>(res);
+        if(mesh)
+        {
+            return remove(mesh);
+        }
+    }
+
+    return false;
 }
 
 bool ResourceManager::loadXmlDataInformation(const std::string& file, const std::string& group)
@@ -235,10 +302,14 @@ void ResourceManager::parseDataGroupNode(TiXmlElement* elem)
             mContext.path = str(elem->Attribute("path"));
 
             std::string type = str(elem->Attribute("type"));
-            if(type == "OBJ" || type.empty())
+            if(type == "OBJ")
             {
                 elem->QueryBoolAttribute("tangent", &(mContext.tangent));
                 mContext.format = MeshManager::MeshContext::OBJ;
+            }
+            else if(type=="TIM" || type.empty())
+            {
+                mContext.format = MeshManager::MeshContext::TIM;
             }
             else return;
 
@@ -248,6 +319,8 @@ void ResourceManager::parseDataGroupNode(TiXmlElement* elem)
         else if(elem->ValueStr() == "TextureData")
         {
             TextureManager::TextureModel model;
+            model.scale={1,1};
+            model.type = renderer::Texture::Type::TEXTURE_2D;
             std::string name = str(elem->Attribute("name"));
             if(!name.empty())
             {
@@ -273,6 +346,16 @@ void ResourceManager::parseDataGroupNode(TiXmlElement* elem)
                     model.parameter.intern = renderer::Texture::Parameter::RGB;
                 else
                     model.parameter.intern = renderer::Texture::Parameter::R;
+
+                float scaleTex=1;
+                elem->QueryFloatAttribute("scale", &scaleTex);
+                model.scale = {scaleTex, scaleTex};
+
+                std::string type = str(elem->Attribute("type"));
+                if(type == "" || type == "TEXTURE_2D")
+                    model.type = renderer::Texture::Type::TEXTURE_2D;
+                else if(type == "TEXTURE_ARRAY" || type == "TEXTURE_2D_ARRAY")
+                    model.type = renderer::Texture::Type::TEXTURE_ARRAY;
 
                 _textureManager.addModel(name, model);
             }
@@ -305,9 +388,9 @@ void ResourceManager::parseDataGroupNode(TiXmlElement* elem)
                 auto it=_mapShader.find(idShaders);
                 if(it == _mapShader.end())
                 {
-                    auto shad = renderer::Shader::combine(Option<renderer::uint>(idShaders.x()),
-                                                          Option<renderer::uint>(idShaders.y()),
-                                                          Option<renderer::uint>(idShaders.z()));
+                    auto shad = renderer::Shader::combine(Option<core::uint>(idShaders.x()),
+                                                          Option<core::uint>(idShaders.y()),
+                                                          Option<core::uint>(idShaders.z()));
                     if(!shad.hasValue())
                     {
                         err("Error linking shader ")<<name<< " "<<src<<std::endl<<renderer::Shader::lastLinkError()<<std::endl;
@@ -477,9 +560,9 @@ renderer::MeshBuffers* ResourceManager::async_getMesh(const std::string& str)
     if(!m)
     {
         m=new renderer::MeshBuffers(nullptr, nullptr);
+        m->_isComplete=false;
         _curMeshLoading.push_back({m, _meshManager.async_loadMesh(_meshDataContext[str], *_pool)});
         _meshManager.addMesh(str, m);
-        m->setComplete(false);
     }
     return m;
 }
@@ -490,17 +573,25 @@ void ResourceManager::flush(float time)
         return;
 
     boost::container::vector<std::pair<renderer::MeshBuffers*, boost::unique_future<renderer::MeshBuffers*>>> cpy;
-    for(size_t i=0 ; i<_curMeshLoading.size() ; i++)
+    for(size_t i=0 ; i<_curMeshLoading.size() ; ++i)
     {
         if(_curMeshLoading[i].second.get_state() == boost::future_state::state::ready)
         {
             _curMeshLoading[i].first->swap(_curMeshLoading[i].second.get());
+            _curMeshLoading[i].first->_isComplete=true;
             delete _curMeshLoading[i].second.get();
-            _curMeshLoading[i].first->vertexBuffer()->uploadOnGpu();
-            _curMeshLoading[i].first->indexBuffer()->uploadOnGpu();
-            _meshManager.addUsedMeshGpuMemory(_curMeshLoading[i].first->indexBuffer()->size()*4);
-            _meshManager.addUsedMeshGpuMemory(_curMeshLoading[i].first->vertexBuffer()->size()*
-                                              _curMeshLoading[i].first->vertexBuffer()->formatSize()*4);
+
+            if(_curMeshLoading[i].first)
+            {
+                if(_curMeshLoading[i].first->vertexBuffer() && _curMeshLoading[i].first->indexBuffer())
+                {
+                    _curMeshLoading[i].first->vertexBuffer()->uploadOnGpu();
+                    _curMeshLoading[i].first->indexBuffer()->uploadOnGpu();
+                    _meshManager.addUsedMeshGpuMemory(_curMeshLoading[i].first->indexBuffer()->size()*4);
+                    _meshManager.addUsedMeshGpuMemory(_curMeshLoading[i].first->vertexBuffer()->size()*
+                                                  _curMeshLoading[i].first->vertexBuffer()->formatSize()*4);
+                }
+            }
         }
         else
         {

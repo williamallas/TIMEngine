@@ -15,15 +15,15 @@ namespace core
     class Vector
     {
     public:
-        Vector() { for(size_t i=0;i<N;i++)_val[i]=T(); }
-        Vector(const T& val) { for(size_t i=0;i<N;i++)_val[i]=val; }
-        Vector(const T val[]) { for(size_t i=0;i<N;i++)_val[i]=val[i]; }
-        template<size_t A> Vector(const Vector<T,A>& v) : Vector() { for(size_t i=0;i<std::min(N,A);i++)_val[i]=v[i]; }
+        Vector() { for(size_t i=0;i<N;++i)_val[i]=T(); }
+        Vector(const T& val) { for(size_t i=0;i<N;++i)_val[i]=val; }
+        Vector(const T val[]) { for(size_t i=0;i<N;++i)_val[i]=val[i]; }
+        template<size_t A> Vector(const Vector<T,A>& v) : Vector() { for(size_t i=0;i<std::min(N,A);++i)_val[i]=v[i]; }
 
         Vector(std::initializer_list<T> l)
         {
             auto it=l.begin();
-            for(size_t i=0;it!=l.end() && i<N;i++)
+            for(size_t i=0;it!=l.end() && i<N;++i)
             {
                 _val[i]=*it;
                 it++;
@@ -42,35 +42,35 @@ namespace core
 
         Vector& set(const T& v, int i) { _val[i] = v; return *this; }
 
-        Vector& operator=(const Vector& v) { for(size_t i=0;i<N;i++)_val[i]=v[i]; return *this; }
-        bool operator==(const Vector& v) const { for(size_t i=0;i<N;i++){if(_val[i]!=v[i])return false;} return true; }
+        Vector& operator=(const Vector& v) { for(size_t i=0;i<N;++i)_val[i]=v[i]; return *this; }
+        bool operator==(const Vector& v) const { for(size_t i=0;i<N;++i){if(_val[i]!=v[i])return false;} return true; }
         bool operator!=(const Vector& v) const { return !((*this)==v); }
 
-        Vector operator+(const Vector& v) const { Vector vec; for(size_t i=0;i<N;i++)vec.set(_val[i]+v[i], i); return vec; }
-        Vector operator-(const Vector& v) const { Vector vec; for(size_t i=0;i<N;i++)vec.set(_val[i]-v[i], i); return vec; }
-        Vector operator*(const Vector& v) const { Vector vec; for(size_t i=0;i<N;i++)vec.set(_val[i]*v[i], i); return vec; }
-        Vector operator/(const Vector& v) const { Vector vec; for(size_t i=0;i<N;i++)vec.set(_val[i]/v[i], i); return vec; }
+        Vector operator+(const Vector& v) const { Vector vec; for(size_t i=0;i<N;++i)vec.set(_val[i]+v[i], i); return vec; }
+        Vector operator-(const Vector& v) const { Vector vec; for(size_t i=0;i<N;++i)vec.set(_val[i]-v[i], i); return vec; }
+        Vector operator*(const Vector& v) const { Vector vec; for(size_t i=0;i<N;++i)vec.set(_val[i]*v[i], i); return vec; }
+        Vector operator/(const Vector& v) const { Vector vec; for(size_t i=0;i<N;++i)vec.set(_val[i]/v[i], i); return vec; }
 
-        Vector& operator+=(const Vector& v)  { for(size_t i=0;i<N;i++)_val[i]+=v[i]; return *this; }
-        Vector& operator-=(const Vector& v)  { for(size_t i=0;i<N;i++)_val[i]-=v[i]; return *this; }
-        Vector& operator*=(const Vector& v)  { for(size_t i=0;i<N;i++)_val[i]*=v[i]; return *this; }
-        Vector& operator/=(const Vector& v)  { for(size_t i=0;i<N;i++)_val[i]/=v[i]; return *this; }
+        Vector& operator+=(const Vector& v)  { for(size_t i=0;i<N;++i)_val[i]+=v[i]; return *this; }
+        Vector& operator-=(const Vector& v)  { for(size_t i=0;i<N;++i)_val[i]-=v[i]; return *this; }
+        Vector& operator*=(const Vector& v)  { for(size_t i=0;i<N;++i)_val[i]*=v[i]; return *this; }
+        Vector& operator/=(const Vector& v)  { for(size_t i=0;i<N;++i)_val[i]/=v[i]; return *this; }
 
-        Vector operator+(const T& v) const { Vector vec; for(size_t i=0;i<N;i++)vec.set(_val[i]+v, i); return vec; }
-        Vector operator-(const T& v) const { Vector vec; for(size_t i=0;i<N;i++)vec.set(_val[i]-v, i); return vec; }
-        Vector operator*(const T& v) const { Vector vec; for(size_t i=0;i<N;i++)vec.set(_val[i]*v, i); return vec; }
-        Vector operator/(const T& v) const { Vector vec; for(size_t i=0;i<N;i++)vec.set(_val[i]/v, i); return vec; }
+        Vector operator+(const T& v) const { Vector vec; for(size_t i=0;i<N;++i)vec.set(_val[i]+v, i); return vec; }
+        Vector operator-(const T& v) const { Vector vec; for(size_t i=0;i<N;++i)vec.set(_val[i]-v, i); return vec; }
+        Vector operator*(const T& v) const { Vector vec; for(size_t i=0;i<N;++i)vec.set(_val[i]*v, i); return vec; }
+        Vector operator/(const T& v) const { Vector vec; for(size_t i=0;i<N;++i)vec.set(_val[i]/v, i); return vec; }
 
-        Vector& operator+=(const T& v) { for(size_t i=0;i<N;i++)_val[i]+=v; return *this; }
-        Vector& operator-=(const T& v) { for(size_t i=0;i<N;i++)_val[i]-=v; return *this; }
-        Vector& operator*=(const T& v) { for(size_t i=0;i<N;i++)_val[i]*=v; return *this; }
-        Vector& operator/=(const T& v) { for(size_t i=0;i<N;i++)_val[i]/=v; return *this; }
+        Vector& operator+=(const T& v) { for(size_t i=0;i<N;++i)_val[i]+=v; return *this; }
+        Vector& operator-=(const T& v) { for(size_t i=0;i<N;++i)_val[i]-=v; return *this; }
+        Vector& operator*=(const T& v) { for(size_t i=0;i<N;++i)_val[i]*=v; return *this; }
+        Vector& operator/=(const T& v) { for(size_t i=0;i<N;++i)_val[i]/=v; return *this; }
 
         Vector operator-() const { return *this * -1; }
 
         bool operator<(const Vector& v) const
         {
-            for(size_t i=0;i<N;i++)
+            for(size_t i=0;i<N;++i)
             {
                 if(_val[i] < v._val[i])
                     return true;
@@ -87,11 +87,11 @@ namespace core
         T dot(const Vector<T,N>& v) const
         {
              T res=0;
-             for(size_t i=0;i<N;i++) res+=(_val[i]*v[i]);
+             for(size_t i=0;i<N;++i) res+=(_val[i]*v[i]);
              return res;
         }
 
-        T length2() const { T res=0; for(size_t i=0;i<N;i++)res+=(_val[i]*_val[i]); return res; }
+        T length2() const { T res=0; for(size_t i=0;i<N;++i)res+=(_val[i]*_val[i]); return res; }
         T length() const { return sqrt(length2()); }
 
         Vector& normalize() {(*this)/=length(); return *this; }
@@ -100,7 +100,7 @@ namespace core
         Vector cross(const Vector& v) const
         {
             Vector<T, N> res;
-            for(size_t i=0; i < N; i++)
+            for(size_t i=0; i < N; ++i)
                 res[i] = _val[(i+1) % N] * v[(i+2) % N] - _val[(i+2) % N] * v[(i+1) % N];
             return res;
         }
@@ -109,7 +109,7 @@ namespace core
         Vector<T,A> to() const
         {
             Vector<T,A> v;
-            for(size_t i=0 ; i<std::min(A,N) ; i++) v[i]=_val[i];
+            for(size_t i=0 ; i<std::min(A,N) ; ++i) v[i]=_val[i];
             return v;
         }
 
@@ -120,7 +120,7 @@ namespace core
         std::string str() const
         {
             std::string str="Vector(";
-            for(size_t i=0;i<N-1;i++)
+            for(size_t i=0;i<N-1;++i)
                 str+=StringUtils(_val[i]).str()+",";
             str += StringUtils(_val[N-1]).str()+")";
             return str;

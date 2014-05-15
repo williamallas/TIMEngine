@@ -22,12 +22,13 @@ renderer::MeshBuffers* MeshManager::loadMesh(const std::string& name, const Mesh
     renderer::MeshBuffers* mesh=nullptr;
     switch(context.format)
     {
-    case MeshContext::OBJ:
-        mesh=MeshLoader::importObj(PATH_DATA+context.path, context.tangent); break;
-    default:
-        mesh=nullptr;
+        case MeshContext::OBJ:
+            mesh=MeshLoader::importObj(PATH_DATA+context.path, context.tangent); break;
+        case MeshContext::TIM:
+            mesh=MeshLoader::importMeshTim(PATH_DATA+context.path); break;
+        default:
+            mesh=nullptr;
     }
-
     if(mesh)
     {
         _mesh[name] = boost::shared_ptr<renderer::MeshBuffers>(mesh);
@@ -40,6 +41,7 @@ renderer::MeshBuffers* MeshManager::loadMesh(const std::string& name, const Mesh
         mesh->vertexBuffer()->uploadOnGpu();
         mesh->indexBuffer()->uploadOnGpu();
     }
+
     return mesh;
 }
 
@@ -61,18 +63,18 @@ size_t MeshManager::loadPackage(boost::container::map<std::string, MeshContext>&
         if(_mesh.find(m.first) != _mesh.end())
             toDel.push_back(m.first);
     }
-    for(size_t i=0 ; i<toDel.size() ; i++)
+    for(size_t i=0 ; i<toDel.size() ; ++i)
         pack.erase(toDel[i]);
 
     if(exclusive)
     {
         toDel.clear();
-        for(auto m : _mesh)
+        for(auto& m : _mesh)
         {
             if(pack.find(m.first) != pack.end())
                 toDel.push_back(m.first);
         }
-        for(size_t i=0 ; i<toDel.size() ; i++)
+        for(size_t i=0 ; i<toDel.size() ; ++i)
             _mesh.erase(toDel[i]);
     }
 
@@ -89,7 +91,7 @@ size_t MeshManager::loadPackage(boost::container::map<std::string, MeshContext>&
             futuresName.push_back(it.first);
         }
 
-        for(size_t i=0 ; i<futures.size() ; i++)
+        for(size_t i=0 ; i<futures.size() ; ++i)
         {
             renderer::MeshBuffers* mesh = futures[i].get();
             if(mesh)
@@ -97,7 +99,7 @@ size_t MeshManager::loadPackage(boost::container::map<std::string, MeshContext>&
                 _mesh[futuresName[i]] = boost::shared_ptr<renderer::MeshBuffers>(mesh);
                 mesh->vertexBuffer()->uploadOnGpu();
                 mesh->indexBuffer()->uploadOnGpu();
-                ret++;
+                ++ret;
             }
         }
     }
@@ -106,7 +108,7 @@ size_t MeshManager::loadPackage(boost::container::map<std::string, MeshContext>&
         for(auto m : pack)
         {
             if(loadMesh(m.first, m.second))
-                ret++;
+                ++ret;
         }
     }
     return ret;
@@ -126,10 +128,30 @@ boost::unique_future<renderer::MeshBuffers*> MeshManager::async_loadMesh(const M
     {
         case MeshContext::OBJ:
             return pool.schedule_trace([&](){return MeshLoader::importObj(PATH_DATA+context.path, context.tangent);});
+        case MeshContext::TIM:
+            return pool.schedule_trace([&](){return MeshLoader::importMeshTim(PATH_DATA+context.path);});
     }
     boost::promise<renderer::MeshBuffers*> p;
     p.set_value(nullptr);
     return p.get_future();
+}
+
+bool MeshManager::remove(renderer::MeshBuffers* mesh)
+{
+    for(auto it=_mesh.begin() ; it != _mesh.end() ; it++)
+    {
+        if(mesh == (it->second).get())
+        {
+            if(mesh->vertexBuffer())
+                _gpuMemory -= mesh->vertexBuffer()->size()*mesh->vertexBuffer()->formatSize()*4;
+            if(mesh->indexBuffer())
+                _gpuMemory -= mesh->indexBuffer()->size()*4;
+
+            _mesh.erase(it);
+            return true;
+        }
+    }
+    return false;
 }
 
 }

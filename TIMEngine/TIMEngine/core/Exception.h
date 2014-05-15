@@ -35,6 +35,12 @@ namespace core
     public:
         BadOptionAccess() : Exception("Bad option access, option doesn't have a value."){}
     };
+
+    class BadRefCounter : public Exception
+    {
+    public:
+        BadRefCounter() : Exception("Bad Ref counter decreasment. (<0)"){}
+    };
 }
 }
 #include "MemoryLoggerOff.h"

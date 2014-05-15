@@ -16,6 +16,8 @@ namespace renderer
     public:
         static size_t vertexFormatSize(VertexFormat);
 
+        static const int MAX_VAO_ATTRIB=8;
+
         struct VertexAttrib
         {
             uint nbComponent, offset; // nbCompnent=0 if disabled
@@ -55,7 +57,7 @@ namespace renderer
         void freeBuffer();
         void freeData();
 
-        void uploadOnGpu(bool sendData=true, bool staticData=false);
+        void uploadOnGpu(bool sendData=true, bool staticData=true);
         void flushOnGpu(size_t, size_t) const;
 
         uint id() const;
@@ -66,6 +68,9 @@ namespace renderer
         void computeBoundingVolume();
         const Sphere& sphere() const;
         const Box& box() const;
+
+        void setBox(const Box&);
+        void setSphere(const Sphere&);
 
         void bindVertexAttrib(uint, const VertexAttrib&);
 
@@ -85,8 +90,7 @@ namespace renderer
         #include "MemoryLoggerOn.h"
 
         /* Stat VAO (vertex attrib) */
-        static const int MAX_VAO_ATTRIB=8;
-        VertexAttrib _attribBinding[MAX_VAO_ATTRIB];
+        static VertexAttrib attribBinding[MAX_VAO_ATTRIB];
     };
 
     /* Inline implementation */
@@ -97,6 +101,9 @@ namespace renderer
     inline size_t VertexBuffer::size() const { return _size; }
     inline const Sphere& VertexBuffer::sphere() const { return _bSphere; }
     inline const Box& VertexBuffer::box() const { return _aabb; }
+
+    inline void VertexBuffer::setBox(const Box& b) { _aabb=b; }
+    inline void VertexBuffer::setSphere(const Sphere& s) { _bSphere=s; }
 
     inline const VertexBuffer::VertexAttrib& VertexBuffer::vertexEngineAttrib(VertexFormat format, int attrib)
     {

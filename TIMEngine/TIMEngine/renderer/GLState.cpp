@@ -17,6 +17,7 @@ namespace renderer
     {
         GLenum glerror=GL_NO_ERROR;
         bool e=true;
+
         while ( (glerror = glGetError()) != GL_NO_ERROR)
         {
             e=false;
@@ -66,13 +67,13 @@ namespace renderer
 
     void GLState::resetStates()
     {
-        for(int i=0 ; i<NB_STATES ; i++)
+        for(int i=0 ; i<NB_STATES ; ++i)
             _glStates[i]=0;
 
-        for(int i=0 ; i<NB_BSTATES ; i++)
+        for(int i=0 ; i<NB_BSTATES ; ++i)
             _glBoolStates[i]=false;
 
-        for(int i=0 ; i<MAX_TEXTURE_UNIT ; i++)
+        for(int i=0 ; i<MAX_TEXTURE_UNIT ; ++i)
         {
             _enabledTexture[i]=0;
             _typeEnabledTexture[i] = GL_TEXTURE_2D;
@@ -102,7 +103,7 @@ namespace renderer
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _glStates[ELEMENT_ARRAY_BUFFER]);
         glUseProgram(_glStates[SHADER]);
 
-        for(int i=0 ; i<MAX_TEXTURE_UNIT ; i++)
+        for(int i=0 ; i<MAX_TEXTURE_UNIT ; ++i)
         {
             glActiveTexture(GL_TEXTURE0+i);
             glBindTexture(_typeEnabledTexture[i], _enabledTexture[i]);
